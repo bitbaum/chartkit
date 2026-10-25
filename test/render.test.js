@@ -231,3 +231,30 @@ test("no literal colour in a component: every colour is a --ck-* variable", () =
   }
   assert.doesNotMatch(css, /font-size:\s*0\.[0-6]\d*rem/, "no label under 0.75rem");
 });
+
+test("BarChart: a small percentage uses the explicit whole without exaggerating its share", () => {
+  const html = renderToStaticMarkup(
+    h(BarChart, {
+      rows: [{ label: "Small share", value: 1.6 }],
+      max: 100,
+      unit: "%",
+      caption: "Share of the whole",
+    }),
+  );
+  assert.match(html, /style="width:1.6%"/);
+  assert.match(html, /<td>1.6<\/td>/);
+});
+
+test("BarChart: the scale accommodates larger rows and ignores invalid whole values", () => {
+  for (const max of [1, 0, -100, NaN, Infinity]) {
+    const html = renderToStaticMarkup(
+      h(BarChart, {
+        rows: [{ label: "Largest", value: 25 }],
+        max,
+        caption: "Safe scale",
+      }),
+    );
+    assert.match(html, /style="width:100%"/);
+    assert.doesNotMatch(html, /width:(?:NaN|Infinity|2500)/);
+  }
+});

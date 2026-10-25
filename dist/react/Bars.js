@@ -8,9 +8,10 @@ const LABEL_MAX = 28;
  * largest first, no number last — whatever order they arrive in; a chart
  * called ranked that trusts its caller's order is sometimes not ranked.
  */
-export function BarChart({ rows, unit, caption, highlight }) {
+export function BarChart({ rows, unit, caption, highlight, max: whole }) {
     const ranked = [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
-    const max = Math.max(0, ...ranked.map((r) => r.value ?? 0));
+    const floor = whole !== undefined && Number.isFinite(whole) && whole > 0 ? whole : 0;
+    const max = Math.max(floor, ...ranked.map((r) => r.value ?? 0));
     const table = {
         head: ["Row", unit ? `Value (${unit})` : "Value", "Share", "Note"],
         rows: ranked.map((r) => [

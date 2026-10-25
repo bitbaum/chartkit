@@ -99,3 +99,5 @@ pnpm run demo         # builds demo/dist; open demo/index.html
 `test:browser` needs Chromium: `pnpm exec playwright install chromium`, or set
 `CHROMIUM_PATH`. `dist/` is committed so a `github:` install needs no build
 step; `pnpm run check:dist` says whether it matches the source.
+
+For proportions, pass the whole as `max`: `<BarChart rows={[{ label: "Share", value: 1.6 }]} max={100} unit="%" caption="Share of the whole" />` draws a 1.6% bar. Without `max`, bars are relative to the largest row. The scale always expands to fit larger values; invalid or non-positive maxima fall back to the largest row. Accessible tables retain the original values.

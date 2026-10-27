@@ -12,6 +12,8 @@
 export { LineChart } from "./LineChart.js";
 export type { LineChartProps } from "./LineChart.js";
 export { BarChart, ShareBars } from "./Bars.js";
+export { ColumnChart, columnScale } from "./Columns.js";
+export type { ColumnChartProps, ColumnPoint, ColumnSeries } from "./Columns.js";
 export type { BarChartProps, BarRow, ShareBarsProps, ShareRow } from "./Bars.js";
 export { Sparkline, Meter, StatTiles } from "./Small.js";
 export type { SparklineProps, MeterProps, StatTile, StatTilesProps } from "./Small.js";

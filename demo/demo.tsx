@@ -6,6 +6,7 @@
 import { createRoot } from "react-dom/client";
 import {
   BarChart,
+  ColumnChart,
   LineChart,
   Meter,
   ShareBars,
@@ -178,6 +179,47 @@ function Demo() {
           ]}
           other={0.14}
           caption="Foundry revenue share, Q1 2026 (illustrative shapes for the layout check, not a finding)."
+        />
+        <ShareBars
+          rows={[
+            { label: "BlackRock", share: 0.0743 },
+            { label: "Vanguard Capital Management", share: 0.0731 },
+            { label: "Directors and executive officers as a group", share: 0.035 },
+          ]}
+          other={0.8176}
+          otherLabel="Others, each below 5%"
+          caption="A remainder that says what it is (illustrative shapes for the layout check, not a finding)."
+        />
+      </section>
+      <section>
+        <h2>ColumnChart — periods in order, a loss below zero</h2>
+        <ColumnChart
+          series={[
+            {
+              id: "revenue",
+              label: "Revenue",
+              points: [
+                { x: "FY2021", y: 16.7 },
+                { x: "FY2022", y: 26.9 },
+                { x: "FY2023", y: 27 },
+                { x: "FY2024", y: 60.9 },
+                { x: "FY2025", y: 130.5 },
+              ],
+            },
+            {
+              id: "net",
+              label: "Net income",
+              points: [
+                { x: "FY2021", y: -1.2 },
+                { x: "FY2022", y: 9.8 },
+                { x: "FY2023", y: null },
+                { x: "FY2024", y: 29.8 },
+                { x: "FY2025", y: 72.9 },
+              ],
+            },
+          ]}
+          unit="USD bn"
+          caption="Annual revenue and net income (illustrative shapes for the layout check, not a finding)."
         />
       </section>
       <section>

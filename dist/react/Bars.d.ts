@@ -34,8 +34,14 @@ export interface ShareRow {
 export interface ShareBarsProps {
     rows: ShareRow[];
     caption: string;
-    /** 0–1: the rest, drawn last in the line colour and listed as "Other". */
+    /** 0–1: the rest, drawn last in the line colour and listed as `otherLabel`. */
     other?: number;
+    /**
+     * What the rest IS, in the legend and the table: "Others, each below 5%".
+     * Left out, "Other". A bare "Other 87%" asks the reader to guess; the app
+     * knows what its remainder is and should say it here.
+     */
+    otherLabel?: string;
 }
 /**
  * One 100% stacked bar with a legend row under it. The largest segment
@@ -43,5 +49,5 @@ export interface ShareBarsProps {
  * container query, so the same markup decides at every width); every
  * segment is named in the legend.
  */
-export declare function ShareBars({ rows, caption, other }: ShareBarsProps): import("react").JSX.Element;
+export declare function ShareBars({ rows, caption, other, otherLabel }: ShareBarsProps): import("react").JSX.Element;
 //# sourceMappingURL=Bars.d.ts.map

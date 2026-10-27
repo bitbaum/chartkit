@@ -24,7 +24,7 @@ README gives: a semver range is what lets a fix reach every product.
 ## Use
 
 ```tsx
-import { LineChart, BarChart, ShareBars, Sparkline, Meter, Timeline, StatTiles } from "@bitbaum/chartkit/react";
+import { LineChart, BarChart, ColumnChart, ShareBars, Sparkline, Meter, Timeline, StatTiles } from "@bitbaum/chartkit/react";
 import "@bitbaum/chartkit/styles.css";
 
 <LineChart
@@ -35,7 +35,8 @@ import "@bitbaum/chartkit/styles.css";
   height={208}                       // CSS px; the width is the container's
 />
 <BarChart rows={[{ label: "China", value: 900000, share: 0.99, estimated: true }, { label: "Other", value: null }]} unit="kg" caption="…" highlight="China" />
-<ShareBars rows={[{ label: "China", share: 0.99 }, { label: "Russia", share: 0.0067 }]} other={0.003} caption="…" />
+<ShareBars rows={[{ label: "BlackRock", share: 0.074 }]} other={0.926} otherLabel="Others, each below 5%" caption="…" />
+<ColumnChart series={[{ id: "rev", label: "Revenue", points: [{ x: "FY2024", y: 61 }, { x: "FY2025", y: -4, href: "…" }] }]} unit="USD bn" caption="…" />
 <Sparkline points={points} label="Backlog over six quarters" />
 <Meter value={12} max={12} label="Severity" href="/methods/severity" />
 <Timeline events={[{ date: "2026-07-17", label: "…", tone: "down", href: "…" }]} caption="…" />
@@ -46,7 +47,11 @@ import "@bitbaum/chartkit/styles.css";
 Several series share one axis — there is no second y-axis and never will be;
 two measures of different scale are two charts. `BarChart` ranks its rows
 (largest first, no number last) whatever order they arrive in, draws a `null`
-as "—" and an estimate with "≈". Every point of a `LineChart` and every event
+as "—" and an estimate with "≈". `ShareBars` names its remainder
+`otherLabel` (left out, "Other") — say what the rest is, never a bare
+"Other 87%". `ColumnChart` draws periods left to right in the order given
+(fiscal labels are not re-sorted), several series side by side, a loss below
+the zero line, and a missing figure as no column and "—" in the table. Every point of a `LineChart` and every event
 of a `Timeline` is an anchor when it has an `href`, with its value, period and
 note on hover and on keyboard focus.
 

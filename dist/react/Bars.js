@@ -29,12 +29,22 @@ export function BarChart({ rows, unit, caption, highlight, max: whole }) {
  * container query, so the same markup decides at every width); every
  * segment is named in the legend.
  */
-export function ShareBars({ rows, caption, other }) {
+export function ShareBars({ rows, caption, other, otherLabel }) {
     const ordered = [...rows].sort((a, b) => b.share - a.share);
     const largest = ordered[0];
     const segments = [
         ...ordered.map((r, i) => ({ ...r, index: (i % 6) + 1, other: false })),
-        ...(other ? [{ label: "Other", share: other, href: undefined, index: 0, other: true }] : []),
+        ...(other
+            ? [
+                {
+                    label: otherLabel?.trim() || "Other",
+                    share: other,
+                    href: undefined,
+                    index: 0,
+                    other: true,
+                },
+            ]
+            : []),
     ];
     const table = {
         head: ["Row", "Share"],

@@ -110,6 +110,43 @@ export function linePath(placed) {
         .join(" ");
 }
 /**
+ * The region under a line, closed down to the plot's floor (100 in the
+ * 0–100 box): a light fill that says "this is the level", the way a quote
+ * page draws a price. Empty for fewer than two points.
+ */
+export function areaPath(placed) {
+    if (placed.length < 2)
+        return "";
+    const first = placed[0];
+    const last = placed[placed.length - 1];
+    return `${linePath(placed)} L${last.x.toFixed(2)} 100 L${first.x.toFixed(2)} 100 Z`;
+}
+/**
+ * Above this many points on a series, `markers="auto"` draws no dots: 250
+ * daily closes drawn as 250 beads is a string of pearls, not a price line.
+ */
+export const AUTO_MARKER_LIMIT = 60;
+/** `auto` settled against the longest series: `all` up to the limit, `none` above. */
+export function resolveMarkers(markers, longest) {
+    if (markers !== "auto")
+        return markers;
+    return longest > AUTO_MARKER_LIMIT ? "none" : "all";
+}
+/**
+ * The strip of the plot each point answers for when its dot is hidden: from
+ * half way to the previous point to half way to the next, in per cent of the
+ * plot's width. The strips tile the plot with no gap, so a pointer or a finger
+ * anywhere over the line lands on the nearest value, however dense the data.
+ */
+export function hitColumns(placed) {
+    return placed.map((p, i) => {
+        const prev = i > 0 ? (placed[i - 1].x + p.x) / 2 : 0;
+        const next = i < placed.length - 1 ? (p.x + placed[i + 1].x) / 2 : 100;
+        const left = Math.min(prev, p.x);
+        return { left, width: Math.max(0, Math.max(next, p.x) - left) };
+    });
+}
+/**
  * Ticks along a time axis, at most `count` of them: on years when the span
  * is over three years, else on months, stepped so they stay apart.
  */

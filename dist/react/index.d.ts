@@ -20,5 +20,5 @@ export type { SparklineProps, MeterProps, StatTile, StatTilesProps } from "./Sma
 export { Timeline } from "./Timeline.js";
 export type { TimelineProps, TimelineEvent } from "./Timeline.js";
 export { ChartFigure, DataTable } from "./Figure.js";
-export type { LinePoint, LineSeries, XValue } from "../index.js";
+export type { LineMarkers, LinePoint, LineSeries, XValue } from "../index.js";
 //# sourceMappingURL=index.d.ts.map

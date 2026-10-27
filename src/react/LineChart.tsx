@@ -1,15 +1,19 @@
 import {
+  areaPath,
   formatNumber,
+  hitColumns,
   formatX,
   isDate,
   linePath,
   numberTicks,
+  resolveMarkers,
   timeTicks,
   valueScale,
   xExtent,
   xPercent,
   xPosition,
   yPercent,
+  type LineMarkers,
   type LinePoint,
   type LineSeries,
   type Tick,
@@ -28,6 +32,17 @@ export interface LineChartProps {
   yFrom?: "zero" | "data";
   /** Plot height in CSS px. The width is the container's. */
   height?: number;
+  /**
+   * Which values carry a dot. `all` (the default) marks every value; `none`
+   * draws the line alone; `ends` marks only each series' last value; `auto`
+   * is `all` up to 60 points on a series and `none` above — a year of daily
+   * closes reads as a line, not a string of beads. Whatever is drawn, every
+   * value can still be pointed at or tabbed to: its dot, value and period
+   * appear on hover and on keyboard focus, and the table holds them all.
+   */
+  markers?: LineMarkers;
+  /** A light fill under each line, in the series' own token colour. */
+  area?: boolean;
 }
 
 /** Points with more than this many on one series draw smaller dots. */
@@ -41,7 +56,15 @@ const DENSE = 40;
  * plot. Every point is an anchor to the page its number came from, with its
  * value, period and note on hover and on keyboard focus.
  */
-export function LineChart({ series, unit, caption, yFrom, height = 208 }: LineChartProps) {
+export function LineChart({
+  series,
+  unit,
+  caption,
+  yFrom,
+  height = 208,
+  markers = "all",
+  area = false,
+}: LineChartProps) {
   const scale = valueScale(
     series.flatMap((s) => s.points.map((p) => p.y)),
     yFrom ?? "auto",
@@ -57,6 +80,7 @@ export function LineChart({ series, unit, caption, yFrom, height = 208 }: LineCh
     s.points.map((p) => ({ point: p, x: xPercent(p.x, extent), y: yPercent(p.y, scale) })),
   );
   const unitText = unit ? ` ${unit}` : "";
+  const shown = resolveMarkers(markers, Math.max(0, ...series.map((s) => s.points.length)));
   const xs = [...new Set(series.flatMap((s) => s.points.map((p) => p.x)))].sort(
     (a, b) => xPosition(a) - xPosition(b),
   );
@@ -100,6 +124,15 @@ export function LineChart({ series, unit, caption, yFrom, height = 208 }: LineCh
           aria-hidden="true"
           focusable="false"
         >
+          {area &&
+            placed.map((pts, i) => (
+              <path
+                key={`${series[i].id}:area`}
+                className="ck-line-area"
+                data-series={(i % 6) + 1}
+                d={areaPath(pts)}
+              />
+            ))}
           {placed.map((pts, i) => (
             <path
               key={series[i].id}
@@ -110,8 +143,9 @@ export function LineChart({ series, unit, caption, yFrom, height = 208 }: LineCh
             />
           ))}
         </svg>
-        {placed.map((pts, i) =>
-          pts.map(({ point, x, y }) => (
+        {placed.map((pts, i) => {
+          const columns = shown === "all" ? undefined : hitColumns(pts);
+          return pts.map(({ point, x, y }, j) => (
             <Point
               key={`${series[i].id}:${String(point.x)}`}
               point={point}
@@ -121,9 +155,11 @@ export function LineChart({ series, unit, caption, yFrom, height = 208 }: LineCh
               dense={pts.length > DENSE}
               unit={unitText}
               label={series.length > 1 ? series[i].label : undefined}
+              column={columns?.[j]}
+              marked={shown === "ends" && j === pts.length - 1}
             />
-          )),
-        )}
+          ));
+        })}
       </div>
       <div className="ck-line-axis" aria-hidden="true">
         {xTicks.map((tick) => (
@@ -158,6 +194,8 @@ function Point({
   dense,
   unit,
   label,
+  column,
+  marked,
 }: {
   point: LinePoint;
   x: number;
@@ -166,11 +204,27 @@ function Point({
   dense: boolean;
   unit: string;
   label?: string;
+  /** Set when dots are hidden: the strip of the plot this value answers for. */
+  column?: { left: number; width: number };
+  /** With `column`, the dot is drawn anyway (the last value under `ends`). */
+  marked?: boolean;
 }) {
   const period = `${formatX(point.x)}${point.preliminary ? " · preliminary" : ""}`;
   const text = `${formatNumber(point.y)}${unit}, ${period}${label ? ` — ${label}` : ""}${point.note ? `. ${point.note}` : ""}`;
-  const className = `ck-pt${dense ? " ck-pt-dense" : ""}${x > 66 ? " ck-pt-end" : ""}`;
-  const style = { left: `${x}%`, top: `${y}%` };
+  const edge = x > 66 ? " ck-pt-end" : column && x < 33 ? " ck-pt-start" : "";
+  const className = column
+    ? `ck-pt ck-pt-col${marked ? " ck-pt-marked" : ""}${edge}`
+    : `ck-pt${dense ? " ck-pt-dense" : ""}${edge}`;
+  // A hidden dot's target is a full-height strip of the plot (they tile it),
+  // with the dot and the tooltip placed inside it at the value.
+  const style: Record<string, string> = column
+    ? {
+        left: `${column.left.toFixed(3)}%`,
+        width: `${column.width.toFixed(3)}%`,
+        "--ck-mx": `${(column.width > 0 ? ((x - column.left) / column.width) * 100 : 50).toFixed(2)}%`,
+        "--ck-y": `${y.toFixed(2)}%`,
+      }
+    : { left: `${x}%`, top: `${y}%` };
   const tip = (
     <span className="ck-tip" role="tooltip">
       <strong>

@@ -73,6 +73,31 @@ export declare function xPercent(x: XValue, [x0, x1]: [number, number]): number;
 /** SVG path data through placed points, in a 0–100 box. */
 export declare function linePath(placed: readonly Placed[]): string;
 /**
+ * The region under a line, closed down to the plot's floor (100 in the
+ * 0–100 box): a light fill that says "this is the level", the way a quote
+ * page draws a price. Empty for fewer than two points.
+ */
+export declare function areaPath(placed: readonly Placed[]): string;
+/** How a LineChart marks its values. */
+export type LineMarkers = "auto" | "none" | "ends" | "all";
+/**
+ * Above this many points on a series, `markers="auto"` draws no dots: 250
+ * daily closes drawn as 250 beads is a string of pearls, not a price line.
+ */
+export declare const AUTO_MARKER_LIMIT = 60;
+/** `auto` settled against the longest series: `all` up to the limit, `none` above. */
+export declare function resolveMarkers(markers: LineMarkers, longest: number): Exclude<LineMarkers, "auto">;
+/**
+ * The strip of the plot each point answers for when its dot is hidden: from
+ * half way to the previous point to half way to the next, in per cent of the
+ * plot's width. The strips tile the plot with no gap, so a pointer or a finger
+ * anywhere over the line lands on the nearest value, however dense the data.
+ */
+export declare function hitColumns(placed: readonly Placed[]): {
+    left: number;
+    width: number;
+}[];
+/**
  * Ticks along a time axis, at most `count` of them: on years when the span
  * is over three years, else on months, stepped so they stay apart.
  */

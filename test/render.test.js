@@ -55,6 +55,53 @@ test("LineChart: a figure, a stretched SVG, a point per value as a link, a table
   assert.doesNotMatch(html, /useEffect|undefined|NaN/);
 });
 
+test("LineChart: markers and area — a dense line is a line, every value still reachable", () => {
+  const dense = Array.from({ length: 120 }, (_, i) => ({ x: i, y: 100 + Math.sin(i / 7) * 10 }));
+  const auto = renderToStaticMarkup(
+    h(LineChart, {
+      series: [{ id: "c", label: "Close", points: dense }],
+      unit: "USD",
+      caption: "Closes",
+      markers: "auto",
+      area: true,
+    }),
+  );
+  assert.equal((auto.match(/class="ck-pt ck-pt-col/g) ?? []).length, 120, "a target per value");
+  assert.doesNotMatch(auto, /ck-pt-marked/, "auto above the limit draws no dot");
+  assert.match(auto, /class="ck-line-area" data-series="1" d="M0\.00 /);
+  assert.match(auto, / Z"/);
+  assert.match(auto, /--ck-y:/);
+  assert.equal((auto.match(/<tr>/g) ?? []).length, 121, "the table still holds every value");
+  assert.doesNotMatch(auto, /NaN|undefined/);
+
+  const ends = renderToStaticMarkup(
+    h(LineChart, {
+      series: [{ id: "c", label: "Close", points }],
+      caption: "Closes",
+      markers: "ends",
+    }),
+  );
+  assert.equal((ends.match(/ck-pt-marked/g) ?? []).length, 1, "only the last value is marked");
+  assert.match(ends, /ck-pt-col ck-pt-marked ck-pt-end/);
+  assert.doesNotMatch(ends, /ck-line-area/, "no area unless asked");
+
+  const few = renderToStaticMarkup(
+    h(LineChart, { series: [{ id: "c", label: "Close", points }], caption: "x", markers: "auto" }),
+  );
+  assert.doesNotMatch(few, /ck-pt-col/, "auto keeps every dot on a short series");
+
+  const none = renderToStaticMarkup(
+    h(LineChart, { series: [{ id: "c", label: "Close", points }], caption: "x", markers: "none" }),
+  );
+  assert.equal((none.match(/ck-pt-col/g) ?? []).length, 3);
+  assert.doesNotMatch(none, /ck-pt-marked/);
+  assert.match(
+    none,
+    /<a href="https:\/\/example.com\/q1" class="ck-pt ck-pt-col/,
+    "a hidden value keeps its link",
+  );
+});
+
 test("LineChart: two series share axes, get a legend and a dash each", () => {
   const html = renderToStaticMarkup(
     h(LineChart, {

@@ -1,4 +1,4 @@
-import { type LineSeries } from "../index.js";
+import { type LineMarkers, type LineSeries } from "../index.js";
 export interface LineChartProps {
     series: LineSeries[];
     /** "GW", "weeks", "USD m": shown with every value. */
@@ -11,6 +11,17 @@ export interface LineChartProps {
     yFrom?: "zero" | "data";
     /** Plot height in CSS px. The width is the container's. */
     height?: number;
+    /**
+     * Which values carry a dot. `all` (the default) marks every value; `none`
+     * draws the line alone; `ends` marks only each series' last value; `auto`
+     * is `all` up to 60 points on a series and `none` above — a year of daily
+     * closes reads as a line, not a string of beads. Whatever is drawn, every
+     * value can still be pointed at or tabbed to: its dot, value and period
+     * appear on hover and on keyboard focus, and the table holds them all.
+     */
+    markers?: LineMarkers;
+    /** A light fill under each line, in the series' own token colour. */
+    area?: boolean;
 }
 /**
  * One or more series on shared axes. The line is an SVG stretched to the
@@ -20,5 +31,5 @@ export interface LineChartProps {
  * plot. Every point is an anchor to the page its number came from, with its
  * value, period and note on hover and on keyboard focus.
  */
-export declare function LineChart({ series, unit, caption, yFrom, height }: LineChartProps): import("react").JSX.Element;
+export declare function LineChart({ series, unit, caption, yFrom, height, markers, area, }: LineChartProps): import("react").JSX.Element;
 //# sourceMappingURL=LineChart.d.ts.map

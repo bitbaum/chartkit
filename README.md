@@ -15,7 +15,7 @@ chartkit is the drawing.)
 ## Install
 
 ```sh
-pnpm add @bitbaum/chartkit@^0.1.0
+pnpm add @bitbaum/chartkit@^0.3.0
 ```
 
 Install releases from npm, never a commit or a branch, for the reason chatkit's
@@ -33,6 +33,14 @@ import "@bitbaum/chartkit/styles.css";
   caption="GE Vernova Gas Power equipment backlog, GW, by quarter."
   yFrom="zero"                       // or "data"; left out, zero only when the data sits near it
   height={208}                       // CSS px; the width is the container's
+/>
+<LineChart                           // a year of daily closes: a clean line with a light fill
+  series={[{ id: "close", label: "Close", points: closes }]}
+  unit="USD"
+  yFrom="data"
+  markers="auto"                     // "all" (default) | "none" | "ends" | "auto"
+  area                               // faint fill under the line, in the series' token colour
+  caption="NVIDIA daily closes, USD, last 12 months."
 />
 <BarChart rows={[{ label: "China", value: 900000, share: 0.99, estimated: true }, { label: "Other", value: null }]} unit="kg" caption="…" highlight="China" />
 <ShareBars rows={[{ label: "BlackRock", share: 0.074 }]} other={0.926} otherLabel="Others, each below 5%" caption="…" />
@@ -54,6 +62,17 @@ as "—" and an estimate with "≈". `ShareBars` names its remainder
 the zero line, and a missing figure as no column and "—" in the table. Every point of a `LineChart` and every event
 of a `Timeline` is an anchor when it has an `href`, with its value, period and
 note on hover and on keyboard focus.
+
+`markers` says which values of a `LineChart` carry a dot: `all` (the default,
+as before) every one; `none` the line alone; `ends` only each series' last
+value; `auto` every one up to 60 points on a series and none above — 250 daily
+closes drawn as 250 beads is a string of pearls, not a price line. A value
+whose dot is hidden is still there: its target is a full-height strip of the
+plot (the strips tile it, so a pointer or a finger anywhere over the line finds
+the nearest value), and hover or keyboard focus shows its dot, a hairline
+cursor and the value. The table behind the chart holds every value either way.
+`area` adds a light fill under each line in that series' own `--ck-series-*`
+colour — never a literal.
 
 ## What every chart guarantees
 

@@ -116,6 +116,21 @@ const EVENTS = [
   },
 ] as const;
 
+// Illustrative only, not a quote: a year of weekday closes from a fixed
+// sequence, so the dense chart is the same on every run.
+const CLOSES = (() => {
+  const out: { x: string; y: number }[] = [];
+  let y = 120;
+  for (let d = Date.UTC(2025, 9, 27), i = 0; d <= Date.UTC(2026, 9, 27); d += 86_400_000) {
+    const day = new Date(d).getUTCDay();
+    if (day === 0 || day === 6) continue;
+    y = Math.max(40, y + Math.sin(i * 0.37) * 2.1 + Math.cos(i * 0.11) * 1.4 + 0.18);
+    out.push({ x: new Date(d).toISOString().slice(0, 10), y: Number(y.toFixed(2)) });
+    i++;
+  }
+  return out;
+})();
+
 function Demo() {
   return (
     <>
@@ -137,6 +152,18 @@ function Demo() {
           series={[{ id: "backlog", label: "Gas Power equipment backlog", points: backlog }]}
           unit="GW"
           caption="GE Vernova Gas Power equipment backlog (firm orders), GW, Q1 2025 to Q2 2026. Source: GE Vernova earnings releases."
+        />
+      </section>
+      <section>
+        <h2>LineChart — a year of daily closes, markers="auto" and area</h2>
+        <LineChart
+          series={[{ id: "close", label: "Close", points: CLOSES }]}
+          unit="USD"
+          yFrom="data"
+          markers="auto"
+          area
+          height={240}
+          caption="Illustrative daily closes over one year, USD (generated, not a quote)."
         />
       </section>
       <section>

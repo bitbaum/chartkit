@@ -237,6 +237,78 @@
     0 0 0 2px var(--ck-bg),
     0 0 0 4px var(--ck-ink);
 }
+/* The fill under a line (`area`): the series' own colour, faint, so the grid
+   still reads through it in light and dark. */
+.ck-line-area {
+  fill: color-mix(in srgb, var(--ck-series, var(--ck-ink)) 9%, transparent);
+  stroke: none;
+}
+
+/* A value whose dot is hidden (`markers` none / ends / auto on dense data):
+   the target is a full-height strip of the plot — the strips tile it, so a
+   pointer or a finger anywhere over the line finds the nearest value and the
+   target is never smaller than the plot is tall. The dot, a hairline cursor
+   and the value appear on hover and keyboard focus. */
+.ck-pt-col {
+  top: 0;
+  bottom: 0;
+  height: auto;
+  margin: 0;
+  border-radius: 0;
+}
+.ck-pt-col::before,
+.ck-pt-col:hover::before,
+.ck-pt-col:focus-visible::before {
+  inset: auto;
+  left: calc(var(--ck-mx) - 0.3rem);
+  top: calc(var(--ck-y) - 0.3rem);
+  width: 0.6rem;
+  height: 0.6rem;
+}
+.ck-pt-col::before {
+  opacity: 0;
+  /* The dot overhangs its strip; only the strip answers the pointer, so a
+     neighbour's hidden dot never steals it. */
+  pointer-events: none;
+}
+.ck-pt-col.ck-pt-marked::before,
+.ck-pt-col:hover::before,
+.ck-pt-col:focus-visible::before {
+  opacity: 1;
+}
+.ck-pt-col::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--ck-mx);
+  border-left: 1px solid var(--ck-ink-muted);
+  z-index: -1;
+  display: none;
+  pointer-events: none;
+}
+.ck-pt-col:hover,
+.ck-pt-col:focus-visible {
+  z-index: 3;
+}
+.ck-pt-col:hover::after,
+.ck-pt-col:focus-visible::after {
+  display: block;
+}
+.ck-pt-col .ck-tip {
+  bottom: auto;
+  top: var(--ck-y);
+  left: var(--ck-mx);
+  transform: translate(-50%, calc(-100% - 0.75rem));
+}
+.ck-pt-col.ck-pt-start .ck-tip {
+  transform: translate(0, calc(-100% - 0.75rem));
+}
+.ck-pt-col.ck-pt-end .ck-tip {
+  left: auto;
+  right: calc(100% - var(--ck-mx));
+  transform: translate(0, calc(-100% - 0.75rem));
+}
 .ck-tip {
   display: none;
   position: absolute;

@@ -4,13 +4,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  AUTO_MARKER_LIMIT,
+  areaPath,
   formatShare,
+  hitColumns,
   formatX,
   lanes,
   linePath,
   monthTicks,
   niceStep,
   numberTicks,
+  resolveMarkers,
   timeTicks,
   truncate,
   valueScale,
@@ -134,4 +138,43 @@ test("shares read as a person says them", () => {
   assert.equal(formatShare(0.0067), "<1%");
   assert.equal(formatShare(0.053), "5.3%");
   assert.equal(formatShare(0), "0%");
+});
+
+test("an area closes the line down to the floor; nothing for one point", () => {
+  const placed = [
+    { x: 0, y: 40 },
+    { x: 50, y: 20 },
+    { x: 100, y: 60 },
+  ];
+  assert.equal(areaPath(placed), `${linePath(placed)} L100.00 100 L0.00 100 Z`);
+  assert.equal(areaPath(placed.slice(0, 1)), "");
+});
+
+test("markers: auto draws dots up to the limit and none above it; the rest are what they say", () => {
+  assert.equal(AUTO_MARKER_LIMIT, 60);
+  assert.equal(resolveMarkers("auto", 60), "all");
+  assert.equal(resolveMarkers("auto", 61), "none");
+  assert.equal(resolveMarkers("auto", 250), "none");
+  assert.equal(resolveMarkers("ends", 250), "ends");
+  assert.equal(resolveMarkers("all", 250), "all");
+  assert.equal(resolveMarkers("none", 3), "none");
+});
+
+test("hidden values answer for strips that tile the plot edge to edge, uneven spacing too", () => {
+  const cols = hitColumns([
+    { x: 0, y: 0 },
+    { x: 10, y: 0 },
+    { x: 40, y: 0 },
+    { x: 100, y: 0 },
+  ]);
+  assert.deepEqual(cols, [
+    { left: 0, width: 5 },
+    { left: 5, width: 20 },
+    { left: 25, width: 45 },
+    { left: 70, width: 30 },
+  ]);
+  for (let i = 1; i < cols.length; i++) {
+    assert.equal(cols[i].left, cols[i - 1].left + cols[i - 1].width);
+  }
+  assert.deepEqual(hitColumns([{ x: 50, y: 0 }]), [{ left: 0, width: 100 }]);
 });

@@ -78,7 +78,7 @@ try {
     await page.close();
   }
 
-  for (const width of [320, 390, 1280]) {
+  for (const width of [320, 390, 1280, 1440]) {
     for (const dark of [false, true]) {
       const name = `${width}px ${dark ? "dark" : "light"}`;
       const page = await browser.newPage({ viewport: { width, height: 900 } });
@@ -106,7 +106,29 @@ try {
           smallest: Math.min(...texts.map(px)),
           stroke: getComputedStyle(path).strokeWidth,
           lanes: document.querySelectorAll(".ck-tl-lane").length,
-          points: document.querySelectorAll(".ck-pt").length,
+          points: document.querySelectorAll(".ck-pt:not(.ck-pt-col)").length,
+          quiet: document.querySelectorAll(".ck-pt-col").length,
+          quietShown: [...document.querySelectorAll(".ck-pt-col")].filter(
+            (el) => getComputedStyle(el, "::before").opacity !== "0",
+          ).length,
+          quietMinHeight: Math.min(
+            ...[...document.querySelectorAll(".ck-pt-col")].map(
+              (el) => el.getBoundingClientRect().height,
+            ),
+          ),
+          quietGap: (() => {
+            const r = [...document.querySelectorAll(".ck-pt-col")].map((el) =>
+              el.getBoundingClientRect(),
+            );
+            let gap = 0;
+            for (let i = 1; i < r.length; i++) gap = Math.max(gap, r[i].left - r[i - 1].right);
+            return gap;
+          })(),
+          area: document.querySelectorAll(".ck-line-area").length,
+          areaFill: (() => {
+            const a = document.querySelector(".ck-line-area");
+            return a ? getComputedStyle(a).fill : "";
+          })(),
           tickInk: getComputedStyle(document.querySelector(".ck-line-tick")).color,
           ink,
           tileCols: getComputedStyle(document.querySelector(".ck-tiles")).gridTemplateColumns.split(
@@ -127,6 +149,18 @@ try {
       );
       check(m.lanes >= 2, `${name}: colliding events took a second lane (${m.lanes} lanes)`);
       check(m.points === 18, `${name}: every value is a point (${m.points})`);
+      check(
+        m.quiet > 200 && m.quietShown === 0,
+        `${name}: a year of closes draws no dots (${m.quietShown} of ${m.quiet} shown)`,
+      );
+      check(
+        m.quietMinHeight >= 44 && m.quietGap <= 0.5,
+        `${name}: hidden values are full-height strips that tile the plot (${m.quietMinHeight}px tall, gap ${m.quietGap}px)`,
+      );
+      check(
+        m.area === 1 && m.areaFill && m.areaFill !== "none" && m.areaFill !== "rgb(0, 0, 0)",
+        `${name}: area draws one light fill (${m.areaFill})`,
+      );
       check(m.tileCols === (width < 640 ? 2 : 4), `${name}: tiles ${m.tileCols} across`);
       check(m.tickInk !== m.ink, `${name}: tick labels in the muted ink, not the text ink`);
       check(errors.length === 0, `${name}: no page errors ${errors.join(" | ")}`);
@@ -150,6 +184,39 @@ try {
       () => getComputedStyle(document.activeElement.querySelector(".ck-tip")).display,
     );
     check(shown === "flex", `a focused point shows its value (${shown})`);
+    await page.close();
+  }
+
+  // A hidden dot still answers: hover shows the dot, the cursor and the value,
+  // and the tooltip stays inside the viewport at the right edge.
+  for (const width of [390, 1440]) {
+    const page = await browser.newPage({ viewport: { width, height: 900 } });
+    await page.goto(base);
+    await page.waitForSelector(".ck-pt-col");
+    await page.focus(".ck-pt-col");
+    const focused = await page.evaluate(
+      () => getComputedStyle(document.activeElement.querySelector(".ck-tip")).display,
+    );
+    check(focused === "flex", `${width}px: a focused hidden value shows its value (${focused})`);
+    const last = page.locator(".ck-pt-col").last();
+    await last.scrollIntoViewIfNeeded();
+    await last.hover();
+    const r = await page.evaluate(() => {
+      const el = [...document.querySelectorAll(".ck-pt-col")].at(-1);
+      const tip = el.querySelector(".ck-tip");
+      const box = tip.getBoundingClientRect();
+      return {
+        tip: getComputedStyle(tip).display,
+        dot: getComputedStyle(el, "::before").opacity,
+        right: box.right,
+        left: box.left,
+        vw: window.innerWidth,
+      };
+    });
+    check(
+      r.tip === "flex" && r.dot === "1" && r.left >= 0 && r.right <= r.vw,
+      `${width}px: hovering a hidden value shows its dot and value, on screen (${JSON.stringify(r)})`,
+    );
     await page.close();
   }
 } finally {

@@ -1,6 +1,6 @@
 {
   "name": "@bitbaum/chartkit",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "One chart for every product: token-driven SVG charts that render on the server, read as a table, and never cut a label — line, ranked bars, share bars, sparkline, meter, timeline, stat tiles.",
   "license": "MIT",
   "author": "Cato",

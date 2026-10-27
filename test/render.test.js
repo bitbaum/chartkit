@@ -10,6 +10,8 @@ import { createElement as h } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   BarChart,
+  ColumnChart,
+  columnScale,
   LineChart,
   Meter,
   ShareBars,
@@ -257,4 +259,73 @@ test("BarChart: the scale accommodates larger rows and ignores invalid whole val
     assert.match(html, /style="width:100%"/);
     assert.doesNotMatch(html, /width:(?:NaN|Infinity|2500)/);
   }
+});
+
+test("ShareBars: otherLabel names the remainder in the legend and the table", () => {
+  const html = renderToStaticMarkup(
+    h(ShareBars, {
+      rows: [{ label: "BlackRock", share: 0.074 }],
+      other: 0.926,
+      otherLabel: "Others, each below 5%",
+      caption: "Holders",
+    }),
+  );
+  assert.match(html, /title="Others, each below 5%">Others, each below 5%<\/span>/);
+  assert.match(html, /<th scope="row">Others, each below 5%<\/th>/);
+  assert.doesNotMatch(html, />Other</);
+  const plain = renderToStaticMarkup(
+    h(ShareBars, { rows: [{ label: "A", share: 0.5 }], other: 0.5, caption: "c" }),
+  );
+  assert.match(plain, /<th scope="row">Other<\/th>/, "left out, the remainder is still Other");
+});
+
+test("columnScale: always holds zero, round steps on both sides of it", () => {
+  assert.deepEqual(columnScale([10, 27]).ticks, [0, 10, 20, 30]);
+  const loss = columnScale([-4, 12]);
+  assert.ok(loss.min < 0 && loss.ticks.includes(0));
+  assert.deepEqual(columnScale([]).ticks, [0, 0.5], "no figures: an axis, not a division by zero");
+});
+
+test("ColumnChart: periods in the order given, a loss goes down, a gap is a dash, every column focusable", () => {
+  const html = renderToStaticMarkup(
+    h(ColumnChart, {
+      series: [
+        {
+          id: "rev",
+          label: "Revenue",
+          points: [
+            { x: "FY2023", y: 27, href: "https://example.com/10k-2023" },
+            { x: "FY2024", y: 61 },
+            { x: "FY2025", y: 130 },
+          ],
+        },
+        {
+          id: "ni",
+          label: "Net income",
+          points: [
+            { x: "FY2023", y: -4 },
+            { x: "FY2024", y: null },
+            { x: "FY2025", y: 73, note: "As last reported." },
+          ],
+        },
+      ],
+      unit: "USD bn",
+      caption: "Revenue and net income",
+    }),
+  );
+  assert.match(html, /<figure class="ck-chart ck-chart-columns"/);
+  const periods = [...html.matchAll(/class="ck-col-xtick" title="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(periods, ["FY2023", "FY2024", "FY2025"]);
+  assert.equal((html.match(/class="ck-col[ "]/g) ?? []).length, 5, "five figures, five columns");
+  assert.equal((html.match(/ck-col-neg/g) ?? []).length, 1);
+  assert.match(
+    html,
+    /<a href="https:\/\/example.com\/10k-2023" class="ck-col"[^>]*target="_blank"/,
+  );
+  assert.match(html, /aria-label="73 USD bn, FY2025 — Net income\. As last reported\."/);
+  assert.match(html, /<th scope="row">FY2024<\/th><td>61<\/td><td>—<\/td>/);
+  assert.match(html, /ck-col-zero/);
+  assert.match(html, /class="ck-legend"/);
+  assert.match(html, /--ck-periods:3/);
+  assert.doesNotMatch(html, /undefined|NaN/);
 });

@@ -293,6 +293,85 @@
   }
 }
 
+/* ---- ColumnChart ------------------------------------------------------- */
+
+.ck-chart-columns {
+  --ck-gutter: 3rem;
+  --ck-plot-height: 11rem;
+  padding: 1.25rem 0.5rem 0 var(--ck-gutter);
+}
+.ck-col-plot {
+  position: relative;
+  height: var(--ck-plot-height);
+}
+.ck-col-zero {
+  border-top-color: var(--ck-ink-muted);
+}
+.ck-col-groups,
+.ck-col-axis {
+  display: grid;
+  grid-template-columns: repeat(var(--ck-periods, 1), minmax(0, 1fr));
+  gap: 0 0.5rem;
+}
+.ck-col-groups {
+  position: absolute;
+  inset: 0;
+}
+.ck-col-group {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  height: 100%;
+}
+.ck-col-slot,
+.ck-col-gap {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 2.5rem;
+  height: 100%;
+}
+.ck-col {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: block;
+  min-height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--ck-series, var(--ck-ink));
+  outline: none;
+  z-index: 1;
+}
+.ck-col-neg {
+  border-radius: 0 0 2px 2px;
+}
+.ck-col:hover,
+.ck-col:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--ck-bg),
+    0 0 0 4px var(--ck-ink);
+}
+.ck-col:hover .ck-tip,
+.ck-col:focus-visible .ck-tip {
+  display: flex;
+  flex-direction: column;
+}
+.ck-col-axis {
+  margin-top: 0.5rem;
+  color: var(--ck-ink-muted);
+}
+.ck-col-xtick {
+  overflow: hidden;
+  font-family: var(--ck-mono);
+  font-size: var(--ck-label);
+  line-height: 1.25rem;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---- BarChart ---------------------------------------------------------- */
 
 .ck-bars {

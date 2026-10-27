@@ -11,6 +11,7 @@
  */
 export { LineChart } from "./LineChart.js";
 export { BarChart, ShareBars } from "./Bars.js";
+export { ColumnChart, columnScale } from "./Columns.js";
 export { Sparkline, Meter, StatTiles } from "./Small.js";
 export { Timeline } from "./Timeline.js";
 export { ChartFigure, DataTable } from "./Figure.js";

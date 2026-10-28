@@ -535,3 +535,40 @@ test("doughnuts keep exact values, links and localized tables; zero total stays 
       /non-negative/,
     );
 });
+
+test("BarChart: ordinal input order, semantic tones and localized accessible values", () => {
+  const rows = [
+    { label: "Unzufrieden", value: 1.5, tone: "negative", estimated: true, share: 0.125 },
+    { label: "Neutral", value: 8, tone: "warning" },
+    { label: "Zufrieden", value: 4, tone: "positive" },
+  ];
+  const html = renderToStaticMarkup(
+    h(BarChart, {
+      rows,
+      caption: "Zufriedenheit",
+      max: 20,
+      order: "input",
+      locale: "de-DE",
+      labels: {
+        row: "Stufe",
+        value: "Anzahl",
+        share: "Anteil",
+        note: "Hinweis",
+        estimated: "geschätzt",
+      },
+    }),
+  );
+  assert.ok(html.indexOf('title="Unzufrieden"') < html.indexOf('title="Neutral"'));
+  assert.ok(html.indexOf('title="Neutral"') < html.indexOf('title="Zufrieden"'));
+  assert.match(html, /data-tone="negative"/);
+  assert.match(html, /data-tone="warning"/);
+  assert.match(html, /data-tone="positive"/);
+  assert.match(html, /width:7.5%/);
+  assert.match(html, /<th scope="col">Anzahl<\/th>/);
+  assert.match(html, /<td>1,5 \(geschätzt\)<\/td>/);
+  assert.match(html, /12,5/);
+  assert.deepEqual(
+    rows.map((r) => r.label),
+    ["Unzufrieden", "Neutral", "Zufrieden"],
+  );
+});

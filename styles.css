@@ -32,6 +32,7 @@
   --ck-accent: var(--accent-primary, #ff5c00);
   --ck-up: hsl(var(--status-positive, 145 60% 35%));
   --ck-down: hsl(var(--status-negative, 0 65% 50%));
+  --ck-warning: hsl(var(--status-warning, 38 80% 40%));
   /* Series by index, never cycled: the first is the ink, and each later one
      differs from the ink by a dash as well as a colour, so the set survives
      a monochrome theme (Substrata's accent IS its ink) and a greyscale print. */
@@ -486,6 +487,15 @@
 }
 .ck-bar-row-hi .ck-bar-fill {
   background: var(--ck-accent);
+}
+.ck-bar-row[data-tone="positive"] .ck-bar-fill {
+  background: var(--ck-up);
+}
+.ck-bar-row[data-tone="warning"] .ck-bar-fill {
+  background: var(--ck-warning);
+}
+.ck-bar-row[data-tone="negative"] .ck-bar-fill {
+  background: var(--ck-down);
 }
 .ck-bar-value {
   display: inline-flex;

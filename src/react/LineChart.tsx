@@ -43,6 +43,11 @@ export interface LineChartProps {
   markers?: LineMarkers;
   /** A light fill under each line, in the series' own token colour. */
   area?: boolean;
+  /** Explicit BCP 47 locale; omitted preserves the existing English output. */
+  locale?: string;
+  /** Translate visible/accessibility words with the product's own dictionary. */
+  periodLabel?: string;
+  preliminaryLabel?: string;
 }
 
 /** Points with more than this many on one series draw smaller dots. */
@@ -64,6 +69,9 @@ export function LineChart({
   height = 208,
   markers = "all",
   area = false,
+  locale,
+  periodLabel = "Period",
+  preliminaryLabel = "preliminary",
 }: LineChartProps) {
   const scale = valueScale(
     series.flatMap((s) => s.points.map((p) => p.y)),
@@ -72,9 +80,12 @@ export function LineChart({
   const extent = xExtent(series);
   const dated = series.some((s) => s.points.some((p) => isDate(p.x)));
   const xTicks: Tick[] = dated
-    ? timeTicks(extent[0], extent[1])
-    : numberTicks(extent[0], extent[1]);
-  const yTicks = scale.ticks.map((v) => ({ pos: yPercent(v, scale), label: formatNumber(v) }));
+    ? timeTicks(extent[0], extent[1], 5, locale)
+    : numberTicks(extent[0], extent[1], 5, locale);
+  const yTicks = scale.ticks.map((v) => ({
+    pos: yPercent(v, scale),
+    label: formatNumber(v, locale),
+  }));
   const gutter = Math.max(...yTicks.map((t) => t.label.length)) + 1;
   const placed = series.map((s) =>
     s.points.map((p) => ({ point: p, x: xPercent(p.x, extent), y: yPercent(p.y, scale) })),
@@ -85,12 +96,14 @@ export function LineChart({
     (a, b) => xPosition(a) - xPosition(b),
   );
   const table = {
-    head: ["Period", ...series.map((s) => (unit ? `${s.label} (${unit})` : s.label))],
+    head: [periodLabel, ...series.map((s) => (unit ? `${s.label} (${unit})` : s.label))],
     rows: xs.map((x) => [
-      formatX(x),
+      formatX(x, locale),
       ...series.map((s) => {
         const p = s.points.find((q) => q.x === x);
-        return p ? `${formatNumber(p.y)}${p.preliminary ? " (preliminary)" : ""}` : "";
+        return p
+          ? `${formatNumber(p.y, locale)}${p.preliminary ? ` (${preliminaryLabel})` : ""}`
+          : "";
       }),
     ]),
   };
@@ -149,6 +162,8 @@ export function LineChart({
             <Point
               key={`${series[i].id}:${String(point.x)}`}
               point={point}
+              locale={locale}
+              preliminaryLabel={preliminaryLabel}
               x={x}
               y={y}
               index={(i % 6) + 1}
@@ -196,7 +211,11 @@ function Point({
   label,
   column,
   marked,
+  locale,
+  preliminaryLabel,
 }: {
+  locale?: string;
+  preliminaryLabel: string;
   point: LinePoint;
   x: number;
   y: number;
@@ -209,8 +228,8 @@ function Point({
   /** With `column`, the dot is drawn anyway (the last value under `ends`). */
   marked?: boolean;
 }) {
-  const period = `${formatX(point.x)}${point.preliminary ? " · preliminary" : ""}`;
-  const text = `${formatNumber(point.y)}${unit}, ${period}${label ? ` — ${label}` : ""}${point.note ? `. ${point.note}` : ""}`;
+  const period = `${formatX(point.x, locale)}${point.preliminary ? ` · ${preliminaryLabel}` : ""}`;
+  const text = `${formatNumber(point.y, locale)}${unit}, ${period}${label ? ` — ${label}` : ""}${point.note ? `. ${point.note}` : ""}`;
   const edge = x > 66 ? " ck-pt-end" : column && x < 33 ? " ck-pt-start" : "";
   const className = column
     ? `ck-pt ck-pt-col${marked ? " ck-pt-marked" : ""}${edge}`
@@ -228,7 +247,7 @@ function Point({
   const tip = (
     <span className="ck-tip" role="tooltip">
       <strong>
-        {formatNumber(point.y)}
+        {formatNumber(point.y, locale)}
         {unit}
       </strong>
       <span>

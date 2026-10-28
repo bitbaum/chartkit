@@ -25,6 +25,8 @@ export interface ColumnChartProps {
   caption: string;
   /** Plot height in CSS px. The width is the container's. */
   height?: number;
+  locale?: string;
+  periodLabel?: string;
 }
 
 /** Period labels longer than this get an ellipsis and keep the full text in `title`. */
@@ -56,7 +58,14 @@ export function columnScale(values: readonly number[], tickCount = 3) {
  * on hover and focus; a link when it has a source. The table carries every
  * figure, a missing one as "—".
  */
-export function ColumnChart({ series, unit, caption, height = 176 }: ColumnChartProps) {
+export function ColumnChart({
+  series,
+  unit,
+  caption,
+  height = 176,
+  locale,
+  periodLabel = "Period",
+}: ColumnChartProps) {
   const periods: XValue[] = [];
   for (const s of series)
     for (const p of s.points) if (!periods.some((q) => q === p.x)) periods.push(p.x);
@@ -64,16 +73,16 @@ export function ColumnChart({ series, unit, caption, height = 176 }: ColumnChart
   const scale = columnScale(values);
   const pct = (v: number) => ((scale.max - v) / (scale.max - scale.min)) * 100;
   const zero = pct(0);
-  const yTicks = scale.ticks.map((v) => ({ pos: pct(v), label: formatNumber(v) }));
+  const yTicks = scale.ticks.map((v) => ({ pos: pct(v), label: formatNumber(v, locale) }));
   const gutter = Math.max(...yTicks.map((t) => t.label.length)) + 1;
   const unitText = unit ? ` ${unit}` : "";
   const table = {
-    head: ["Period", ...series.map((s) => (unit ? `${s.label} (${unit})` : s.label))],
+    head: [periodLabel, ...series.map((s) => (unit ? `${s.label} (${unit})` : s.label))],
     rows: periods.map((x) => [
-      formatX(x),
+      formatX(x, locale),
       ...series.map((s) => {
         const p = s.points.find((q) => q.x === x);
-        return p && p.y !== null ? formatNumber(p.y) : "—";
+        return p && p.y !== null ? formatNumber(p.y, locale) : "—";
       }),
     ]),
   };
@@ -116,6 +125,7 @@ export function ColumnChart({ series, unit, caption, height = 176 }: ColumnChart
                   <Column
                     key={s.id}
                     point={p}
+                    locale={locale}
                     index={(i % 6) + 1}
                     top={top}
                     size={size}
@@ -132,8 +142,8 @@ export function ColumnChart({ series, unit, caption, height = 176 }: ColumnChart
       </div>
       <div className="ck-col-axis" aria-hidden="true">
         {periods.map((x) => (
-          <span key={String(x)} className="ck-col-xtick" title={formatX(x)}>
-            {truncate(formatX(x), PERIOD_MAX)}
+          <span key={String(x)} className="ck-col-xtick" title={formatX(x, locale)}>
+            {truncate(formatX(x, locale), PERIOD_MAX)}
           </span>
         ))}
       </div>
@@ -160,7 +170,9 @@ function Column({
   unit,
   label,
   end,
+  locale,
 }: {
+  locale?: string;
   point: ColumnPoint;
   index: number;
   top: number;
@@ -170,8 +182,8 @@ function Column({
   label?: string;
   end: boolean;
 }) {
-  const value = formatNumber(point.y as number);
-  const period = formatX(point.x);
+  const value = formatNumber(point.y as number, locale);
+  const period = formatX(point.x, locale);
   const text = `${value}${unit}, ${period}${label ? ` — ${label}` : ""}${point.note ? `. ${point.note}` : ""}`;
   const className = `ck-col${negative ? " ck-col-neg" : ""}${end ? " ck-pt-end" : ""}`;
   const style = { top: `${top}%`, height: `${Math.max(size, 0.5)}%` };

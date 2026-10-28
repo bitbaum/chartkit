@@ -16,7 +16,7 @@ const LABEL = 30;
  * right in the left part of the axis and to the left near its end, and is
  * never wider than the room to its neighbour.
  */
-export function Timeline({ events, caption, from, to }) {
+export function Timeline({ events, caption, from, to, locale, tableLabels }) {
     const sorted = [...events].sort((a, b) => xPosition(a.date) - xPosition(b.date));
     const times = sorted.map((e) => xPosition(e.date));
     const first = times[0] ?? Date.now();
@@ -29,11 +29,15 @@ export function Timeline({ events, caption, from, to }) {
     const spans = positions.map((p, i) => facesRight[i] ? [p, p + LABEL] : [p - LABEL, p]);
     const lane = lanes(spans, 1);
     const laneCount = Math.max(1, ...lane.map((l) => l + 1));
-    const ticks = monthTicks(x0, x1);
+    const ticks = monthTicks(x0, x1, 6, locale);
     let labelled = 0;
     const table = {
-        head: ["Date", "Event", "Effect"],
-        rows: sorted.map((e) => [formatX(e.date), e.label, e.tone ?? ""]),
+        head: [
+            tableLabels?.date ?? "Date",
+            tableLabels?.event ?? "Event",
+            tableLabels?.effect ?? "Effect",
+        ],
+        rows: sorted.map((e) => [formatX(e.date, locale), e.label, e.tone ?? ""]),
     };
     return (_jsx(ChartFigure, { kind: "timeline", caption: caption, table: table, children: _jsxs("div", { className: "ck-tl", style: { "--ck-lanes": laneCount }, children: [Array.from({ length: laneCount }, (_, l) => (_jsx("div", { className: "ck-tl-lane", children: sorted.map((e, i) => {
                         if (lane[i] !== l)
@@ -46,7 +50,7 @@ export function Timeline({ events, caption, from, to }) {
                         const room = right
                             ? Math.min(100, ...mates.filter(([a]) => a >= pos).map(([a]) => a)) - pos
                             : pos - Math.max(0, ...mates.filter(([, b]) => b <= pos).map(([, b]) => b));
-                        const text = `${formatX(e.date)}: ${e.label}`;
+                        const text = `${formatX(e.date, locale)}: ${e.label}`;
                         return (_jsxs(MaybeLink, { href: e.href, className: `ck-tl-event${right ? "" : " ck-tl-left"}`, title: text, style: { left: `${pos}%`, "--ck-room": `${room - 2}%` }, children: [_jsx("span", { className: "ck-tl-dot", "data-tone": e.tone ?? "neutral", "data-kind": e.kind }), _jsx("span", { className: "ck-tl-label", children: e.label })] }, e.date + e.label));
                     }) }, l))), _jsx("div", { className: "ck-tl-axis", "aria-hidden": "true", children: ticks.map((t) => (_jsx("span", { className: `ck-tl-tick${t.major ? " ck-tl-major" : ""}${t.pos < 8 ? " ck-at-start" : t.pos > 92 ? " ck-at-end" : ""}`, "data-alt": t.major && labelled++ % 2 === 1 ? "" : undefined, style: { left: `${t.pos}%` }, children: t.label && _jsx("span", { className: "ck-tl-month", children: t.label }) }, t.pos))) })] }) }));
 }

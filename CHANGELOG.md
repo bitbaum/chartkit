@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+
+- Line/column charts and timelines accept an explicit locale for dates, numbers, axes, tooltips and accessible tables. Product dictionaries supply translated period, preliminary and timeline headings. Existing English output stays unchanged when omitted; dates use UTC.
+
 ## 0.3.0
 
 - **`LineChart` `markers`** — `"all"` (default, unchanged) | `"none"` |

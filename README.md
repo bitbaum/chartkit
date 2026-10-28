@@ -125,3 +125,19 @@ pnpm run demo         # builds demo/dist; open demo/index.html
 step; `pnpm run check:dist` says whether it matches the source.
 
 For proportions, pass the whole as `max`: `<BarChart rows={[{ label: "Share", value: 1.6 }]} max={100} unit="%" caption="Share of the whole" />` draws a 1.6% bar. Without `max`, bars are relative to the largest row. The scale always expands to fit larger values; invalid or non-positive maxima fall back to the largest row. Accessible tables retain the original values.
+
+## App language
+
+`LineChart`, `ColumnChart` and `Timeline` accept an explicit BCP 47 `locale`
+(such as `de-CH`); numbers, dates, axes, tooltips and accessible tables use it.
+Dates are formatted in UTC so a server timezone cannot move a reporting date.
+Omitting the locale preserves the existing English output. Pass translations
+from the app's dictionary with `periodLabel` on line/column charts,
+`preliminaryLabel` on line charts, and `tableLabels: { date, event, effect }`
+on timelines. These labels remain English unless supplied: a locale formats
+data, it does not guess product copy.
+
+```tsx
+<LineChart series={series} caption="Umsatz" locale="de-CH"
+  periodLabel="Zeitraum" preliminaryLabel="vorläufig" />
+```

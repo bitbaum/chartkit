@@ -14,6 +14,12 @@ export interface TimelineProps {
     /** ISO dates. Left out, the axis runs from the month of the first event to the month after the last. */
     from?: string;
     to?: string;
+    locale?: string;
+    tableLabels?: {
+        date: string;
+        event: string;
+        effect: string;
+    };
 }
 /**
  * Events on a horizontal date axis with month ticks. Each event is an anchor
@@ -22,5 +28,5 @@ export interface TimelineProps {
  * right in the left part of the axis and to the left near its end, and is
  * never wider than the room to its neighbour.
  */
-export declare function Timeline({ events, caption, from, to }: TimelineProps): import("react").JSX.Element;
+export declare function Timeline({ events, caption, from, to, locale, tableLabels }: TimelineProps): import("react").JSX.Element;
 //# sourceMappingURL=Timeline.d.ts.map

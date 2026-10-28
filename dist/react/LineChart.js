@@ -11,8 +11,15 @@ const DENSE = 40;
  * plot. Every point is an anchor to the page its number came from, with its
  * value, period and note on hover and on keyboard focus.
  */
-export function LineChart({ series, unit, caption, yFrom, height = 208, markers = "all", area = false, locale, periodLabel = "Period", preliminaryLabel = "preliminary", }) {
-    const scale = valueScale(series.flatMap((s) => s.points.map((p) => p.y)), yFrom ?? "auto");
+export function LineChart({ series, unit, caption, yFrom, height = 208, markers = "all", area = false, locale, periodLabel = "Period", preliminaryLabel = "preliminary", referenceBands = [], }) {
+    for (const band of referenceBands) {
+        if (!Number.isFinite(band.from) || !Number.isFinite(band.to) || band.from > band.to)
+            throw new RangeError("Reference bands need finite bounds in ascending order");
+    }
+    const scale = valueScale([
+        ...series.flatMap((s) => s.points.map((p) => p.y)),
+        ...referenceBands.flatMap((b) => [b.from, b.to]),
+    ], yFrom ?? "auto");
     const extent = xExtent(series);
     const dated = series.some((s) => s.points.some((p) => isDate(p.x)));
     const xTicks = dated
@@ -39,11 +46,11 @@ export function LineChart({ series, unit, caption, yFrom, height = 208, markers 
             }),
         ]),
     };
-    return (_jsxs(ChartFigure, { kind: "line", caption: caption, table: table, style: { "--ck-gutter": `${gutter}ch`, "--ck-plot-height": `${height}px` }, children: [_jsxs("div", { className: "ck-line-plot", children: [yTicks.map((tick) => (_jsx("div", { className: "ck-line-grid", style: { top: `${tick.pos}%` }, "aria-hidden": "true", children: _jsx("span", { className: "ck-line-tick", children: tick.label }) }, tick.label))), unit && (_jsx("span", { className: "ck-line-unit", "aria-hidden": "true", children: unit })), _jsxs("svg", { className: "ck-line-svg", viewBox: "0 0 100 100", preserveAspectRatio: "none", "aria-hidden": "true", focusable: "false", children: [area &&
+    return (_jsxs(ChartFigure, { kind: "line", caption: caption, table: table, style: { "--ck-gutter": `${gutter}ch`, "--ck-plot-height": `${height}px` }, children: [_jsxs("div", { className: "ck-line-plot", children: [yTicks.map((tick) => (_jsx("div", { className: "ck-line-grid", style: { top: `${tick.pos}%` }, "aria-hidden": "true", children: _jsx("span", { className: "ck-line-tick", children: tick.label }) }, tick.label))), unit && (_jsx("span", { className: "ck-line-unit", "aria-hidden": "true", children: unit })), _jsxs("svg", { className: "ck-line-svg", viewBox: "0 0 100 100", preserveAspectRatio: "none", "aria-hidden": "true", focusable: "false", children: [referenceBands.map((band, i) => (_jsx("rect", { className: "ck-reference-band", x: "0", width: "100", y: yPercent(band.to, scale), height: yPercent(band.from, scale) - yPercent(band.to, scale) }, i))), area &&
                                 placed.map((pts, i) => (_jsx("path", { className: "ck-line-area", "data-series": (i % 6) + 1, d: areaPath(pts) }, `${series[i].id}:area`))), placed.map((pts, i) => (_jsx("path", { className: "ck-line-path", "data-series": (i % 6) + 1, d: linePath(pts), vectorEffect: "non-scaling-stroke" }, series[i].id)))] }), placed.map((pts, i) => {
                         const columns = shown === "all" ? undefined : hitColumns(pts);
                         return pts.map(({ point, x, y }, j) => (_jsx(Point, { point: point, locale: locale, preliminaryLabel: preliminaryLabel, x: x, y: y, index: (i % 6) + 1, dense: pts.length > DENSE, unit: unitText, label: series.length > 1 ? series[i].label : undefined, column: columns?.[j], marked: shown === "ends" && j === pts.length - 1 }, `${series[i].id}:${String(point.x)}`)));
-                    })] }), _jsx("div", { className: "ck-line-axis", "aria-hidden": "true", children: xTicks.map((tick) => (_jsx("span", { className: `ck-line-xtick${tick.pos < 8 ? " ck-at-start" : tick.pos > 92 ? " ck-at-end" : ""}`, style: { left: `${tick.pos}%` }, children: tick.label }, tick.label + tick.pos))) }), series.length > 1 && (_jsx("ol", { className: "ck-legend", "aria-hidden": "true", children: series.map((s, i) => (_jsxs("li", { className: "ck-legend-item", children: [_jsx("span", { className: "ck-legend-swatch", "data-series": (i % 6) + 1 }), s.label] }, s.id))) }))] }));
+                    })] }), _jsx("div", { className: "ck-line-axis", "aria-hidden": "true", children: xTicks.map((tick) => (_jsx("span", { className: `ck-line-xtick${tick.pos < 8 ? " ck-at-start" : tick.pos > 92 ? " ck-at-end" : ""}`, style: { left: `${tick.pos}%` }, children: tick.label }, tick.label + tick.pos))) }), referenceBands.length > 0 && (_jsx("ul", { className: "ck-band-labels", children: referenceBands.map((band, i) => (_jsxs("li", { children: [band.label, ": ", formatNumber(band.from, locale), "\u2013", formatNumber(band.to, locale), unitText] }, i))) })), series.length > 1 && (_jsx("ol", { className: "ck-legend", "aria-hidden": "true", children: series.map((s, i) => (_jsxs("li", { className: "ck-legend-item", children: [_jsx("span", { className: "ck-legend-swatch", "data-series": (i % 6) + 1 }), s.label] }, s.id))) }))] }));
 }
 function Point({ point, x, y, index, dense, unit, label, column, marked, locale, preliminaryLabel, }) {
     const period = `${formatX(point.x, locale)}${point.preliminary ? ` · ${preliminaryLabel}` : ""}`;

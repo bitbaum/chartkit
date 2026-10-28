@@ -23,6 +23,8 @@ export interface ColumnChartProps {
     height?: number;
     locale?: string;
     periodLabel?: string;
+    /** Stack positive and negative values separately around zero. Missing data remains missing. */
+    stacked?: boolean;
 }
 /**
  * A value axis that always holds zero, on round steps, below zero as well as
@@ -42,5 +44,5 @@ export declare function columnScale(values: readonly number[], tickCount?: numbe
  * on hover and focus; a link when it has a source. The table carries every
  * figure, a missing one as "—".
  */
-export declare function ColumnChart({ series, unit, caption, height, locale, periodLabel, }: ColumnChartProps): import("react").JSX.Element;
+export declare function ColumnChart({ series, unit, caption, height, locale, periodLabel, stacked, }: ColumnChartProps): import("react").JSX.Element;
 //# sourceMappingURL=Columns.d.ts.map

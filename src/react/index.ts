@@ -21,3 +21,6 @@ export { Timeline } from "./Timeline.js";
 export type { TimelineProps, TimelineEvent } from "./Timeline.js";
 export { ChartFigure, DataTable } from "./Figure.js";
 export type { LineMarkers, LinePoint, LineSeries, XValue } from "../index.js";
+
+export { DoughnutChart } from "./Doughnut.js";
+export type { DoughnutChartProps, DoughnutRow } from "./Doughnut.js";

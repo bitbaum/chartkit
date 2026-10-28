@@ -27,6 +27,8 @@ export interface ColumnChartProps {
   height?: number;
   locale?: string;
   periodLabel?: string;
+  /** Stack positive and negative values separately around zero. Missing data remains missing. */
+  stacked?: boolean;
 }
 
 /** Period labels longer than this get an ellipsis and keep the full text in `title`. */
@@ -65,12 +67,30 @@ export function ColumnChart({
   height = 176,
   locale,
   periodLabel = "Period",
+  stacked = false,
 }: ColumnChartProps) {
   const periods: XValue[] = [];
   for (const s of series)
     for (const p of s.points) if (!periods.some((q) => q === p.x)) periods.push(p.x);
   const values = series.flatMap((s) => s.points.flatMap((p) => (p.y === null ? [] : [p.y])));
-  const scale = columnScale(values);
+  const stacks = periods.map((x) => {
+    let positive = 0,
+      negative = 0;
+    return series.map((s) => {
+      const value = s.points.find((p) => p.x === x)?.y;
+      if (value == null) return null;
+      if (!Number.isFinite(value)) throw new RangeError("Column values must be finite");
+      const start = value >= 0 ? positive : negative;
+      const end = start + value;
+      if (!Number.isFinite(end)) throw new RangeError("Column totals must be finite");
+      if (value >= 0) positive = end;
+      else negative = end;
+      return { start, end };
+    });
+  });
+  const scale = columnScale(
+    stacked ? stacks.flatMap((row) => row.flatMap((s) => (s ? [s.start, s.end] : []))) : values,
+  );
   const pct = (v: number) => ((scale.max - v) / (scale.max - scale.min)) * 100;
   const zero = pct(0);
   const yTicks = scale.ticks.map((v) => ({ pos: pct(v), label: formatNumber(v, locale) }));
@@ -115,12 +135,15 @@ export function ColumnChart({
         )}
         <div className="ck-col-groups">
           {periods.map((x, at) => (
-            <div key={String(x)} className="ck-col-group">
+            <div key={String(x)} className={`ck-col-group${stacked ? " ck-col-stacked" : ""}`}>
               {series.map((s, i) => {
                 const p = s.points.find((q) => q.x === x);
                 if (!p || p.y === null) return <span key={s.id} className="ck-col-gap" />;
-                const top = Math.min(pct(p.y), zero);
-                const size = Math.abs(pct(p.y) - zero);
+                const segment = stacks[at][i];
+                const start = stacked && segment ? pct(segment.start) : zero;
+                const end = stacked && segment ? pct(segment.end) : pct(p.y);
+                const top = Math.min(start, end);
+                const size = Math.abs(end - start);
                 return (
                   <Column
                     key={s.id}
@@ -128,6 +151,7 @@ export function ColumnChart({
                     locale={locale}
                     index={(i % 6) + 1}
                     top={top}
+                    stacked={stacked}
                     size={size}
                     negative={p.y < 0}
                     unit={unitText}
@@ -171,7 +195,9 @@ function Column({
   label,
   end,
   locale,
+  stacked,
 }: {
+  stacked?: boolean;
   locale?: string;
   point: ColumnPoint;
   index: number;
@@ -186,7 +212,7 @@ function Column({
   const period = formatX(point.x, locale);
   const text = `${value}${unit}, ${period}${label ? ` — ${label}` : ""}${point.note ? `. ${point.note}` : ""}`;
   const className = `ck-col${negative ? " ck-col-neg" : ""}${end ? " ck-pt-end" : ""}`;
-  const style = { top: `${top}%`, height: `${Math.max(size, 0.5)}%` };
+  const style = { top: `${top}%`, height: `${Math.max(size, stacked ? 0 : 0.5)}%` };
   const tip = (
     <span className="ck-tip" role="tooltip">
       <strong>

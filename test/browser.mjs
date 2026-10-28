@@ -156,6 +156,26 @@ try {
           defects.length === 0,
           `${name}: no chart text leaves its figure or overlaps another (${defects.slice(0, 6).join(" | ")})`,
         );
+        check(
+          (await page.locator(".ck-reference-band").count()) === 1,
+          `${name}: reference interval is drawn`,
+        );
+        check(
+          (await page.locator(".ck-col-stacked").count()) === 2,
+          `${name}: periods stack their components`,
+        );
+        check(
+          (await page.locator(".ck-chart-doughnut .ck-chart-table").count()) === 2,
+          `${name}: doughnut and empty state retain their data tables`,
+        );
+        for (const bar of await page.locator(".ck-col-stacked .ck-col").all()) {
+          await bar.hover();
+          check(
+            (await bar.locator(".ck-tip").evaluate((el) => getComputedStyle(el).display)) ===
+              "flex",
+            `${name}: every stacked segment exposes its own value on hover`,
+          );
+        }
         check(m.overflow <= 0, `${name}: no horizontal scroll (${m.overflow}px over)`);
         check(m.smallest >= 12, `${name}: no label under 12px (${m.smallest}px)`);
         check(
@@ -167,7 +187,7 @@ try {
           `${name}: ${m.charts} charts, ${m.tables} tables behind them`,
         );
         check(m.lanes >= 2, `${name}: colliding events took a second lane (${m.lanes} lanes)`);
-        check(m.points === 18, `${name}: every value is a point (${m.points})`);
+        check(m.points === 20, `${name}: every value is a point (${m.points})`);
         check(
           m.quiet > 200 && m.quietShown === 0,
           `${name}: a year of closes draws no dots (${m.quietShown} of ${m.quiet} shown)`,

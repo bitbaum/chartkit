@@ -7,6 +7,7 @@ import { createRoot } from "react-dom/client";
 import {
   BarChart,
   ColumnChart,
+  DoughnutChart,
   LineChart,
   Meter,
   ShareBars,
@@ -266,6 +267,65 @@ function Demo() {
           events={[...EVENTS]}
           caption="Events on Substrata's bottlenecks, December 2025 to September 2026. Green moved a bottleneck looser, red tighter."
         />
+      </section>
+      <section>
+        <h2>Reference interval — illustrative, not clinical advice</h2>
+        <LineChart
+          {...localized}
+          series={[
+            {
+              id: "example",
+              label: "Value",
+              points: [
+                { x: 1, y: 12 },
+                { x: 2, y: 15 },
+              ],
+            },
+          ]}
+          caption="Illustrative reference interval"
+          referenceBands={[{ from: 10, to: 20, label: "Reference interval" }]}
+        />
+      </section>
+      <section>
+        <h2>Stacked columns — positive and negative totals</h2>
+        <ColumnChart
+          {...localized}
+          stacked
+          caption="Illustrative stacked values"
+          series={[
+            {
+              id: "a",
+              label: "A",
+              points: [
+                { x: "2025-03", y: 2 },
+                { x: "2025-04", y: -2 },
+              ],
+            },
+            {
+              id: "b",
+              label: "B",
+              points: [
+                { x: "2025-03", y: 4 },
+                { x: "2025-04", y: -4 },
+              ],
+            },
+          ]}
+        />
+      </section>
+      <section>
+        <h2>Doughnut — values and links</h2>
+        <DoughnutChart
+          locale={locale}
+          labelHeading={locale ? "Kategorie" : "Category"}
+          valueHeading={locale ? "Wert" : "Value"}
+          caption="Illustrative costs, not real tenant data"
+          unit="CHF"
+          rows={[
+            { label: "Feed", value: 75, href: "#demo" },
+            { label: "Care", value: 25 },
+          ]}
+        />
+        <DoughnutChart caption="No recorded costs" rows={[{ label: "None", value: 0 }]} />
       </section>
       <section>
         <h2>Sparkline and Meter — inline</h2>

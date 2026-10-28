@@ -15,4 +15,5 @@ export { ColumnChart, columnScale } from "./Columns.js";
 export { Sparkline, Meter, StatTiles } from "./Small.js";
 export { Timeline } from "./Timeline.js";
 export { ChartFigure, DataTable } from "./Figure.js";
+export { DoughnutChart } from "./Doughnut.js";
 //# sourceMappingURL=index.js.map

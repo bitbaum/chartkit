@@ -11,6 +11,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   BarChart,
   ColumnChart,
+  DoughnutChart,
   columnScale,
   LineChart,
   Meter,
@@ -408,4 +409,129 @@ test("localized line, column and timeline charts retain numbers and translate ac
   assert.match(timeline, /März/);
   assert.match(timeline, /Datum/);
   assert.match(timeline, /Ereignis/);
+});
+
+test("reference bands extend the scale and retain their exact labelled interval", () => {
+  const html = renderToStaticMarkup(
+    h(LineChart, {
+      series: [
+        {
+          id: "weight",
+          label: "Weight",
+          points: [
+            { x: 1, y: 12 },
+            { x: 2, y: 13 },
+          ],
+        },
+      ],
+      caption: "Weight",
+      unit: "kg",
+      referenceBands: [{ from: 10, to: 20, label: "Expected interval" }],
+    }),
+  );
+  assert.match(html, /class="ck-reference-band"/);
+  assert.match(html, /Expected interval: 10–20 kg/);
+  assert.match(html, /<th scope="row">1<\/th><td>12<\/td>/);
+  assert.match(html, /<th scope="row">2<\/th><td>13<\/td>/);
+  assert.throws(
+    () =>
+      renderToStaticMarkup(
+        h(LineChart, {
+          series: [],
+          caption: "Bad",
+          referenceBands: [{ from: 20, to: 10, label: "Bad" }],
+        }),
+      ),
+    /ascending/,
+  );
+  assert.throws(
+    () =>
+      renderToStaticMarkup(
+        h(LineChart, {
+          series: [],
+          caption: "Bad",
+          referenceBands: [{ from: 0, to: NaN, label: "Bad" }],
+        }),
+      ),
+    /finite/,
+  );
+});
+
+test("stacked columns scale to totals, retain individual values and never turn missing data into zero", () => {
+  const html = renderToStaticMarkup(
+    h(ColumnChart, {
+      stacked: true,
+      caption: "Total",
+      series: [
+        {
+          id: "a",
+          label: "A",
+          points: [
+            { x: "2025", y: 2 },
+            { x: "2026", y: null },
+          ],
+        },
+        {
+          id: "b",
+          label: "B",
+          points: [
+            { x: "2025", y: 4 },
+            { x: "2026", y: 0 },
+          ],
+        },
+      ],
+    }),
+  );
+  assert.match(html, /ck-col-stacked/);
+  assert.match(
+    html,
+    /<span class="ck-line-tick">6<\/span>/,
+    "axis contains the sum, not just the largest component",
+  );
+  assert.match(html, /<th scope="row">2025<\/th><td>2<\/td><td>4<\/td>/);
+  assert.match(html, /<th scope="row">2026<\/th><td>—<\/td><td>0<\/td>/);
+  const negative = renderToStaticMarkup(
+    h(ColumnChart, {
+      stacked: true,
+      caption: "Loss",
+      series: [
+        { id: "a", label: "A", points: [{ x: 1, y: -2 }] },
+        { id: "b", label: "B", points: [{ x: 1, y: -4 }] },
+      ],
+    }),
+  );
+  assert.match(negative, /<span class="ck-line-tick">-6<\/span>/);
+  assert.doesNotMatch(negative, /NaN|Infinity/);
+});
+
+test("doughnuts keep exact values, links and localized tables; zero total stays empty and invalid values fail", () => {
+  const html = renderToStaticMarkup(
+    h(DoughnutChart, {
+      rows: [
+        { label: "Feed", value: 75, href: "/feed" },
+        { label: "Care", value: 25 },
+      ],
+      caption: "Costs",
+      unit: "CHF",
+      locale: "de-CH",
+      labelHeading: "Kategorie",
+      valueHeading: "Wert",
+    }),
+  );
+  assert.match(html, /ck-chart-doughnut/);
+  assert.match(html, /href="\/feed"/);
+  assert.match(html, /<th scope="col">Kategorie<\/th>/);
+  assert.match(html, /<th scope="row">Feed<\/th><td>75<\/td>/);
+  assert.match(html, /<th scope="row">Care<\/th><td>25<\/td>/);
+  const zero = renderToStaticMarkup(
+    h(DoughnutChart, { rows: [{ label: "None", value: 0 }], caption: "Empty" }),
+  );
+  assert.doesNotMatch(zero, /NaN|Infinity/);
+  assert.match(zero, /stroke-dasharray="0 /);
+  for (const value of [-1, NaN, Infinity])
+    assert.throws(
+      () =>
+        renderToStaticMarkup(h(DoughnutChart, { rows: [{ label: "Bad", value }], caption: "Bad" })),
+      /non-negative/,
+    );
 });

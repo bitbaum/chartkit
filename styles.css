@@ -734,3 +734,82 @@ a.ck-tl-event:focus-visible .ck-tl-label {
     display: none;
   }
 }
+
+/* Reference intervals are data supplied by the product, never clinical advice. */
+.ck-reference-band {
+  fill: color-mix(in srgb, var(--ck-ink-muted) 12%, transparent);
+}
+.ck-band-labels {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+  color: var(--ck-ink-muted);
+  font-size: var(--ck-label);
+}
+.ck-col-stacked {
+  position: relative;
+}
+.ck-col-stacked .ck-col-slot,
+.ck-col-stacked .ck-col-gap {
+  position: absolute;
+  inset: 0;
+  width: 70%;
+  margin-inline: auto;
+}
+.ck-col-stacked .ck-col {
+  min-height: 0;
+  border-radius: 0;
+}
+.ck-ring-layout {
+  display: grid;
+  grid-template-columns: minmax(5rem, 35%) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+}
+.ck-ring {
+  width: 100%;
+  max-width: 15rem;
+}
+.ck-ring circle {
+  fill: none;
+  stroke-width: 14;
+}
+.ck-ring-track {
+  stroke: var(--ck-line);
+}
+.ck-ring-segment {
+  stroke: var(--ck-series);
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+.ck-ring-legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+.ck-ring-legend li {
+  display: grid;
+  grid-template-columns: 0.75rem minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: var(--ck-label);
+  min-height: 2.75rem;
+}
+.ck-ring-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+a.ck-ring-label {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: inherit;
+}
+.ck-col-stacked .ck-col-slot {
+  pointer-events: none;
+}
+.ck-col-stacked .ck-col {
+  pointer-events: auto;
+}

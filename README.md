@@ -141,3 +141,21 @@ data, it does not guess product copy.
 <LineChart series={series} caption="Umsatz" locale="de-CH"
   periodLabel="Zeitraum" preliminaryLabel="vorläufig" />
 ```
+
+## Reference intervals, stacking and proportions
+
+`LineChart` accepts `referenceBands={[{ from: 10, to: 20, label: "Expected interval" }]}`.
+The app owns the interval, label and unit; the chart extends its scale to include
+the bounds and exposes the exact interval as text. Invalid/reversed bounds fail
+rather than silently presenting a different interval. This is a display feature,
+not a source of clinical ranges or medical advice.
+
+`ColumnChart stacked` stacks positives upward and negatives downward from zero.
+The axis includes accumulated totals; the table keeps each original value,
+including the distinction between missing and zero. The default remains grouped.
+
+`DoughnutChart` takes `rows: { label, value, href? }[]`, `caption`, `unit?`,
+`locale?`, `labelHeading?` and `valueHeading?`. It renders a proportional ring,
+linked legend and exact-value accessible table. Values must be finite and
+non-negative. An empty/zero total draws no invented shares. Colours use app
+tokens; legend links remain keyboard reachable without depending on a slice.

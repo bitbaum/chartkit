@@ -27,6 +27,12 @@ export interface LineChartProps {
     /** Translate visible/accessibility words with the product's own dictionary. */
     periodLabel?: string;
     preliminaryLabel?: string;
+    /** App-defined reference intervals, in the same unit as the observations. */
+    referenceBands?: {
+        from: number;
+        to: number;
+        label: string;
+    }[];
 }
 /**
  * One or more series on shared axes. The line is an SVG stretched to the
@@ -36,5 +42,5 @@ export interface LineChartProps {
  * plot. Every point is an anchor to the page its number came from, with its
  * value, period and note on hover and on keyboard focus.
  */
-export declare function LineChart({ series, unit, caption, yFrom, height, markers, area, locale, periodLabel, preliminaryLabel, }: LineChartProps): import("react").JSX.Element;
+export declare function LineChart({ series, unit, caption, yFrom, height, markers, area, locale, periodLabel, preliminaryLabel, referenceBands, }: LineChartProps): import("react").JSX.Element;
 //# sourceMappingURL=LineChart.d.ts.map

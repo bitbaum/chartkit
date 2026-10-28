@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+- App-defined reference intervals in LineChart, including exact accessible bounds.
+- Optional stacked ColumnChart with separate positive/negative totals and missing-value preservation.
+- DoughnutChart with token colours, localized exact-value tables, source links and zero-total handling.
+
 ## 0.4.0
 
 - Line/column charts and timelines accept an explicit locale for dates, numbers, axes, tooltips and accessible tables. Product dictionaries supply translated period, preliminary and timeline headings. Existing English output stays unchanged when omitted; dates use UTC.

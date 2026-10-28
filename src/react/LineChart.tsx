@@ -48,6 +48,8 @@ export interface LineChartProps {
   /** Translate visible/accessibility words with the product's own dictionary. */
   periodLabel?: string;
   preliminaryLabel?: string;
+  /** App-defined reference intervals, in the same unit as the observations. */
+  referenceBands?: { from: number; to: number; label: string }[];
 }
 
 /** Points with more than this many on one series draw smaller dots. */
@@ -72,9 +74,17 @@ export function LineChart({
   locale,
   periodLabel = "Period",
   preliminaryLabel = "preliminary",
+  referenceBands = [],
 }: LineChartProps) {
+  for (const band of referenceBands) {
+    if (!Number.isFinite(band.from) || !Number.isFinite(band.to) || band.from > band.to)
+      throw new RangeError("Reference bands need finite bounds in ascending order");
+  }
   const scale = valueScale(
-    series.flatMap((s) => s.points.map((p) => p.y)),
+    [
+      ...series.flatMap((s) => s.points.map((p) => p.y)),
+      ...referenceBands.flatMap((b) => [b.from, b.to]),
+    ],
     yFrom ?? "auto",
   );
   const extent = xExtent(series);
@@ -137,6 +147,16 @@ export function LineChart({
           aria-hidden="true"
           focusable="false"
         >
+          {referenceBands.map((band, i) => (
+            <rect
+              key={i}
+              className="ck-reference-band"
+              x="0"
+              width="100"
+              y={yPercent(band.to, scale)}
+              height={yPercent(band.from, scale) - yPercent(band.to, scale)}
+            />
+          ))}
           {area &&
             placed.map((pts, i) => (
               <path
@@ -187,6 +207,16 @@ export function LineChart({
           </span>
         ))}
       </div>
+      {referenceBands.length > 0 && (
+        <ul className="ck-band-labels">
+          {referenceBands.map((band, i) => (
+            <li key={i}>
+              {band.label}: {formatNumber(band.from, locale)}–{formatNumber(band.to, locale)}
+              {unitText}
+            </li>
+          ))}
+        </ul>
+      )}
       {series.length > 1 && (
         <ol className="ck-legend" aria-hidden="true">
           {series.map((s, i) => (

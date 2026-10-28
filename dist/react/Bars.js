@@ -7,21 +7,37 @@ const LABEL_MAX = 28;
  * Horizontal ranked bars: label left, bar, value right. Rows are ranked —
  * largest first, no number last — whatever order they arrive in; a chart
  * called ranked that trusts its caller's order is sometimes not ranked.
+ * Ordinal scales explicitly opt into input order instead.
  */
-export function BarChart({ rows, unit, caption, highlight, max: whole }) {
-    const ranked = [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+export function BarChart({ rows, unit, caption, highlight, max: whole, order = "ranked", locale, labels, }) {
+    const ranked = order === "input"
+        ? [...rows]
+        : [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+    const words = {
+        row: "Row",
+        value: "Value",
+        share: "Share",
+        note: "Note",
+        estimated: "estimated",
+        ...labels,
+    };
+    const shareText = (share) => locale
+        ? new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(share)
+        : formatShare(share);
     const floor = whole !== undefined && Number.isFinite(whole) && whole > 0 ? whole : 0;
     const max = Math.max(floor, ...ranked.map((r) => r.value ?? 0));
     const table = {
-        head: ["Row", unit ? `Value (${unit})` : "Value", "Share", "Note"],
+        head: [words.row, unit ? `${words.value} (${unit})` : words.value, words.share, words.note],
         rows: ranked.map((r) => [
             r.label,
-            r.value === null ? "—" : `${formatNumber(r.value)}${r.estimated ? " (estimated)" : ""}`,
-            r.share === undefined ? "" : formatShare(r.share),
+            r.value === null
+                ? "—"
+                : `${formatNumber(r.value, locale)}${r.estimated ? ` (${words.estimated})` : ""}`,
+            r.share === undefined ? "" : shareText(r.share),
             r.note ?? "",
         ]),
     };
-    return (_jsx(ChartFigure, { kind: "bars", caption: caption, table: table, children: _jsx("ol", { className: "ck-bars", "aria-hidden": "true", children: ranked.map((r) => (_jsxs("li", { className: `ck-bar-row${r.label === highlight ? " ck-bar-row-hi" : ""}`, children: [_jsx(MaybeLink, { href: r.href, className: "ck-bar-label", title: r.note ? `${r.label}: ${r.note}` : r.label, children: truncate(r.label, LABEL_MAX) }), _jsx("span", { className: "ck-bar-track", children: r.value !== null && max > 0 && (_jsx("span", { className: "ck-bar-fill", style: { width: `${(r.value / max) * 100}%` } })) }), _jsxs("span", { className: "ck-bar-value", children: [r.value === null ? (_jsx("span", { className: "ck-bar-none", children: "\u2014" })) : (_jsxs(_Fragment, { children: [r.estimated && (_jsx("span", { className: "ck-bar-est", title: "Estimated", children: "\u2248" })), formatNumber(r.value)] })), r.share !== undefined && (_jsx("span", { className: "ck-bar-share", children: formatShare(r.share) }))] })] }, r.label))) }) }));
+    return (_jsx(ChartFigure, { kind: "bars", caption: caption, table: table, children: _jsx("ol", { className: "ck-bars", "aria-hidden": "true", children: ranked.map((r) => (_jsxs("li", { className: `ck-bar-row${r.label === highlight ? " ck-bar-row-hi" : ""}`, "data-tone": r.tone, children: [_jsx(MaybeLink, { href: r.href, className: "ck-bar-label", title: r.note ? `${r.label}: ${r.note}` : r.label, children: truncate(r.label, LABEL_MAX) }), _jsx("span", { className: "ck-bar-track", children: r.value !== null && max > 0 && (_jsx("span", { className: "ck-bar-fill", style: { width: `${(r.value / max) * 100}%` } })) }), _jsxs("span", { className: "ck-bar-value", children: [r.value === null ? (_jsx("span", { className: "ck-bar-none", children: "\u2014" })) : (_jsxs(_Fragment, { children: [r.estimated && (_jsx("span", { className: "ck-bar-est", title: labels?.estimated ?? "Estimated", children: "\u2248" })), formatNumber(r.value, locale)] })), r.share !== undefined && _jsx("span", { className: "ck-bar-share", children: shareText(r.share) })] })] }, r.label))) }) }));
 }
 /**
  * One 100% stacked bar with a legend row under it. The largest segment

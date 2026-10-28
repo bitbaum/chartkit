@@ -8,6 +8,8 @@ export interface BarRow {
     note?: string;
     /** The source marks the value estimated. */
     estimated?: boolean;
+    /** Meaning of the row, independent of its magnitude. */
+    tone?: "positive" | "warning" | "negative";
 }
 export interface BarChartProps {
     rows: BarRow[];
@@ -18,13 +20,25 @@ export interface BarChartProps {
     /** Full-scale value for proportional bars (for example 100 for percentages).
      * Values above this still fit. Invalid/non-positive scales use the largest row. */
     max?: number;
+    /** Ranked by default; preserve input order for ordinal scales. */
+    order?: "ranked" | "input";
+    /** Number formatting for both the visual and accessible table. */
+    locale?: string;
+    labels?: {
+        row?: string;
+        value?: string;
+        share?: string;
+        note?: string;
+        estimated?: string;
+    };
 }
 /**
  * Horizontal ranked bars: label left, bar, value right. Rows are ranked —
  * largest first, no number last — whatever order they arrive in; a chart
  * called ranked that trusts its caller's order is sometimes not ranked.
+ * Ordinal scales explicitly opt into input order instead.
  */
-export declare function BarChart({ rows, unit, caption, highlight, max: whole }: BarChartProps): import("react").JSX.Element;
+export declare function BarChart({ rows, unit, caption, highlight, max: whole, order, locale, labels, }: BarChartProps): import("react").JSX.Element;
 export interface ShareRow {
     label: string;
     /** 0–1. */

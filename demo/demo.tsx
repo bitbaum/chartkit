@@ -197,6 +197,27 @@ function Demo() {
         />
       </section>
       <section>
+        <h2>Ordinal bars — localized satisfaction scale (sample data)</h2>
+        <BarChart
+          rows={[
+            { label: "Unzufrieden", value: 2, tone: "negative" },
+            { label: "Neutral", value: 8, tone: "warning" },
+            { label: "Zufrieden", value: 4, tone: "positive" },
+          ]}
+          order="input"
+          locale="de-CH"
+          labels={{
+            row: "Stufe",
+            value: "Anzahl",
+            share: "Anteil",
+            note: "Hinweis",
+            estimated: "geschätzt",
+          }}
+          max={14}
+          caption="Zufriedenheit — Beispieldaten, keine gemessenen Ergebnisse."
+        />
+      </section>
+      <section>
         <h2>ShareBars — one bar, a legend</h2>
         <ShareBars
           rows={[

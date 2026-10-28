@@ -53,7 +53,7 @@ import "@bitbaum/chartkit/styles.css";
 
 `x` is an ISO period (`2025`, `2025-Q2`, `2025-03`, `2025-03-31`) or a number.
 Several series share one axis — there is no second y-axis and never will be;
-two measures of different scale are two charts. `BarChart` ranks its rows
+two measures of different scale are two charts. `BarChart` defaults to ranking its rows
 (largest first, no number last) whatever order they arrive in, draws a `null`
 as "—" and an estimate with "≈". `ShareBars` names its remainder
 `otherLabel` (left out, "Other") — say what the rest is, never a bare
@@ -159,3 +159,15 @@ including the distinction between missing and zero. The default remains grouped.
 linked legend and exact-value accessible table. Values must be finite and
 non-negative. An empty/zero total draws no invented shares. Colours use app
 tokens; legend links remain keyboard reachable without depending on a slice.
+
+
+For ordinal scales, use `order="input"` to preserve the row sequence. Optional
+row `tone` values (`positive`, `warning`, `negative`) use theme colors rather
+than a hardcoded palette. Tone takes precedence over highlight color; keep
+meaningful text labels so color is never the only indication.
+
+`BarChart` also accepts `locale` for visual and accessible number formatting,
+and `labels` (`row`, `value`, `share`, `note`, `estimated`) for table headings
+and estimate text. Defaults preserve existing English ranked charts. For a
+satisfaction distribution, pass the total as `max`, ordinal rows and translated
+scale labels; each bar then shows its share of all responses.

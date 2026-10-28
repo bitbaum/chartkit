@@ -11,6 +11,8 @@ export interface BarRow {
   note?: string;
   /** The source marks the value estimated. */
   estimated?: boolean;
+  /** Meaning of the row, independent of its magnitude. */
+  tone?: "positive" | "warning" | "negative";
 }
 
 export interface BarChartProps {
@@ -22,6 +24,11 @@ export interface BarChartProps {
   /** Full-scale value for proportional bars (for example 100 for percentages).
    * Values above this still fit. Invalid/non-positive scales use the largest row. */
   max?: number;
+  /** Ranked by default; preserve input order for ordinal scales. */
+  order?: "ranked" | "input";
+  /** Number formatting for both the visual and accessible table. */
+  locale?: string;
+  labels?: { row?: string; value?: string; share?: string; note?: string; estimated?: string };
 }
 
 /** Labels longer than this get an ellipsis and carry the full text in `title`. */
@@ -31,17 +38,44 @@ const LABEL_MAX = 28;
  * Horizontal ranked bars: label left, bar, value right. Rows are ranked —
  * largest first, no number last — whatever order they arrive in; a chart
  * called ranked that trusts its caller's order is sometimes not ranked.
+ * Ordinal scales explicitly opt into input order instead.
  */
-export function BarChart({ rows, unit, caption, highlight, max: whole }: BarChartProps) {
-  const ranked = [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+export function BarChart({
+  rows,
+  unit,
+  caption,
+  highlight,
+  max: whole,
+  order = "ranked",
+  locale,
+  labels,
+}: BarChartProps) {
+  const ranked =
+    order === "input"
+      ? [...rows]
+      : [...rows].sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity));
+  const words = {
+    row: "Row",
+    value: "Value",
+    share: "Share",
+    note: "Note",
+    estimated: "estimated",
+    ...labels,
+  };
+  const shareText = (share: number) =>
+    locale
+      ? new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(share)
+      : formatShare(share);
   const floor = whole !== undefined && Number.isFinite(whole) && whole > 0 ? whole : 0;
   const max = Math.max(floor, ...ranked.map((r) => r.value ?? 0));
   const table = {
-    head: ["Row", unit ? `Value (${unit})` : "Value", "Share", "Note"],
+    head: [words.row, unit ? `${words.value} (${unit})` : words.value, words.share, words.note],
     rows: ranked.map((r) => [
       r.label,
-      r.value === null ? "—" : `${formatNumber(r.value)}${r.estimated ? " (estimated)" : ""}`,
-      r.share === undefined ? "" : formatShare(r.share),
+      r.value === null
+        ? "—"
+        : `${formatNumber(r.value, locale)}${r.estimated ? ` (${words.estimated})` : ""}`,
+      r.share === undefined ? "" : shareText(r.share),
       r.note ?? "",
     ]),
   };
@@ -52,6 +86,7 @@ export function BarChart({ rows, unit, caption, highlight, max: whole }: BarChar
           <li
             key={r.label}
             className={`ck-bar-row${r.label === highlight ? " ck-bar-row-hi" : ""}`}
+            data-tone={r.tone}
           >
             <MaybeLink
               href={r.href}
@@ -71,16 +106,14 @@ export function BarChart({ rows, unit, caption, highlight, max: whole }: BarChar
               ) : (
                 <>
                   {r.estimated && (
-                    <span className="ck-bar-est" title="Estimated">
+                    <span className="ck-bar-est" title={labels?.estimated ?? "Estimated"}>
                       ≈
                     </span>
                   )}
-                  {formatNumber(r.value)}
+                  {formatNumber(r.value, locale)}
                 </>
               )}
-              {r.share !== undefined && (
-                <span className="ck-bar-share">{formatShare(r.share)}</span>
-              )}
+              {r.share !== undefined && <span className="ck-bar-share">{shareText(r.share)}</span>}
             </span>
           </li>
         ))}

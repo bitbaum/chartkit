@@ -178,3 +178,23 @@ test("hidden values answer for strips that tile the plot edge to edge, uneven sp
   }
   assert.deepEqual(hitColumns([{ x: 50, y: 0 }]), [{ left: 0, width: 100 }]);
 });
+
+test("localized UTC dates and ticks keep their period and ignore the server timezone", () => {
+  assert.equal(formatX("2025-03-31", "de-DE"), "31. März 2025");
+  assert.equal(formatX("2025-03", "de-DE"), "März 2025");
+  assert.equal(formatX("FY2025", "de-DE"), "FY2025");
+  assert.equal(formatX("2025-Q2", "de-DE"), "Q2 2025");
+  const from = Date.UTC(2025, 1, 1),
+    to = Date.UTC(2025, 3, 1);
+  assert.ok(timeTicks(from, to, 5, "de-DE").some((t) => t.label.includes("März")));
+  assert.ok(
+    monthTicks(from, to, 6, "de-DE").some(
+      (t) =>
+        t.label ===
+        new Intl.DateTimeFormat("de-DE", { month: "short", timeZone: "UTC" }).format(
+          new Date(Date.UTC(2025, 2, 1)),
+        ),
+    ),
+  );
+  assert.ok(numberTicks(1000, 3000, 5, "de-DE").some((t) => t.label === "2.000"));
+});

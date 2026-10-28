@@ -78,99 +78,119 @@ try {
     await page.close();
   }
 
-  for (const width of [320, 390, 1280, 1440]) {
-    for (const dark of [false, true]) {
-      const name = `${width}px ${dark ? "dark" : "light"}`;
-      const page = await browser.newPage({ viewport: { width, height: 900 } });
-      const errors = [];
-      page.on("pageerror", (e) => errors.push(e.message));
-      await page.goto(base);
-      if (dark) await page.evaluate(() => document.documentElement.classList.add("dark"));
-      await page.waitForSelector(".ck-chart-line .ck-pt");
-      await page.waitForTimeout(100);
-      const defects = await page.evaluate(`(${CHART_DEFECTS_SOURCE})(document.body)`);
-      const m = await page.evaluate(() => {
-        const px = (el) => parseFloat(getComputedStyle(el).fontSize);
-        const texts = [...document.querySelectorAll(".ck-chart *")].filter(
-          (el) =>
-            !el.closest(".ck-sr") &&
-            [...el.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.nodeValue.trim()) &&
-            el.getBoundingClientRect().width > 0,
-        );
-        const path = document.querySelector(".ck-line-path");
-        const ink = getComputedStyle(document.body).color;
-        return {
-          overflow: document.documentElement.scrollWidth - window.innerWidth,
-          charts: document.querySelectorAll(".ck-chart").length,
-          tables: document.querySelectorAll(".ck-chart .ck-chart-table").length,
-          smallest: Math.min(...texts.map(px)),
-          stroke: getComputedStyle(path).strokeWidth,
-          lanes: document.querySelectorAll(".ck-tl-lane").length,
-          points: document.querySelectorAll(".ck-pt:not(.ck-pt-col)").length,
-          quiet: document.querySelectorAll(".ck-pt-col").length,
-          quietShown: [...document.querySelectorAll(".ck-pt-col")].filter(
-            (el) => getComputedStyle(el, "::before").opacity !== "0",
-          ).length,
-          quietMinHeight: Math.min(
-            ...[...document.querySelectorAll(".ck-pt-col")].map(
-              (el) => el.getBoundingClientRect().height,
+  for (const locale of [undefined, "de-CH"]) {
+    for (const width of [320, 390, 1280, 1440]) {
+      for (const dark of [false, true]) {
+        const name = `${width}px ${dark ? "dark" : "light"} ${locale ?? "default"}`;
+        const page = await browser.newPage({ viewport: { width, height: 900 } });
+        const errors = [];
+        page.on("pageerror", (e) => errors.push(e.message));
+        await page.goto(locale ? `${base}?locale=${locale}` : base);
+        if (locale) {
+          check(
+            (await page
+              .locator(".ck-chart-line .ck-chart-table thead th")
+              .first()
+              .textContent()) === "Zeitraum",
+            `${name}: accessible period heading uses the app dictionary`,
+          );
+          check(
+            (
+              await page.locator(".ck-chart-line .ck-chart-table tbody").first().textContent()
+            ).includes("März"),
+            `${name}: dates use German month names`,
+          );
+        }
+        if (dark) await page.evaluate(() => document.documentElement.classList.add("dark"));
+        await page.waitForSelector(".ck-chart-line .ck-pt");
+        await page.waitForTimeout(100);
+        const defects = await page.evaluate(`(${CHART_DEFECTS_SOURCE})(document.body)`);
+        const m = await page.evaluate(() => {
+          const px = (el) => parseFloat(getComputedStyle(el).fontSize);
+          const texts = [...document.querySelectorAll(".ck-chart *")].filter(
+            (el) =>
+              !el.closest(".ck-sr") &&
+              [...el.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.nodeValue.trim()) &&
+              el.getBoundingClientRect().width > 0,
+          );
+          const path = document.querySelector(".ck-line-path");
+          const ink = getComputedStyle(document.body).color;
+          return {
+            overflow: document.documentElement.scrollWidth - window.innerWidth,
+            charts: document.querySelectorAll(".ck-chart").length,
+            tables: document.querySelectorAll(".ck-chart .ck-chart-table").length,
+            smallest: Math.min(...texts.map(px)),
+            stroke: getComputedStyle(path).strokeWidth,
+            lanes: document.querySelectorAll(".ck-tl-lane").length,
+            points: document.querySelectorAll(".ck-pt:not(.ck-pt-col)").length,
+            quiet: document.querySelectorAll(".ck-pt-col").length,
+            quietShown: [...document.querySelectorAll(".ck-pt-col")].filter(
+              (el) => getComputedStyle(el, "::before").opacity !== "0",
+            ).length,
+            quietMinHeight: Math.min(
+              ...[...document.querySelectorAll(".ck-pt-col")].map(
+                (el) => el.getBoundingClientRect().height,
+              ),
             ),
-          ),
-          quietGap: (() => {
-            const r = [...document.querySelectorAll(".ck-pt-col")].map((el) =>
-              el.getBoundingClientRect(),
-            );
-            let gap = 0;
-            for (let i = 1; i < r.length; i++) gap = Math.max(gap, r[i].left - r[i - 1].right);
-            return gap;
-          })(),
-          area: document.querySelectorAll(".ck-line-area").length,
-          areaFill: (() => {
-            const a = document.querySelector(".ck-line-area");
-            return a ? getComputedStyle(a).fill : "";
-          })(),
-          tickInk: getComputedStyle(document.querySelector(".ck-line-tick")).color,
-          ink,
-          tileCols: getComputedStyle(document.querySelector(".ck-tiles")).gridTemplateColumns.split(
-            " ",
-          ).length,
-        };
-      });
-      check(
-        defects.length === 0,
-        `${name}: no chart text leaves its figure or overlaps another (${defects.slice(0, 6).join(" | ")})`,
-      );
-      check(m.overflow <= 0, `${name}: no horizontal scroll (${m.overflow}px over)`);
-      check(m.smallest >= 12, `${name}: no label under 12px (${m.smallest}px)`);
-      check(m.stroke === "2px", `${name}: the line is 2px whatever the plot's size (${m.stroke})`);
-      check(
-        m.charts >= 8 && m.tables >= 6,
-        `${name}: ${m.charts} charts, ${m.tables} tables behind them`,
-      );
-      check(m.lanes >= 2, `${name}: colliding events took a second lane (${m.lanes} lanes)`);
-      check(m.points === 18, `${name}: every value is a point (${m.points})`);
-      check(
-        m.quiet > 200 && m.quietShown === 0,
-        `${name}: a year of closes draws no dots (${m.quietShown} of ${m.quiet} shown)`,
-      );
-      check(
-        m.quietMinHeight >= 44 && m.quietGap <= 0.5,
-        `${name}: hidden values are full-height strips that tile the plot (${m.quietMinHeight}px tall, gap ${m.quietGap}px)`,
-      );
-      check(
-        m.area === 1 && m.areaFill && m.areaFill !== "none" && m.areaFill !== "rgb(0, 0, 0)",
-        `${name}: area draws one light fill (${m.areaFill})`,
-      );
-      check(m.tileCols === (width < 640 ? 2 : 4), `${name}: tiles ${m.tileCols} across`);
-      check(m.tickInk !== m.ink, `${name}: tick labels in the muted ink, not the text ink`);
-      check(errors.length === 0, `${name}: no page errors ${errors.join(" | ")}`);
-      if (process.env.CHARTKIT_SHOTS) {
-        await page.screenshot({
-          path: `${process.env.CHARTKIT_SHOTS}/demo-${width}-${dark ? "dark" : "light"}.png`,
-          fullPage: true,
+            quietGap: (() => {
+              const r = [...document.querySelectorAll(".ck-pt-col")].map((el) =>
+                el.getBoundingClientRect(),
+              );
+              let gap = 0;
+              for (let i = 1; i < r.length; i++) gap = Math.max(gap, r[i].left - r[i - 1].right);
+              return gap;
+            })(),
+            area: document.querySelectorAll(".ck-line-area").length,
+            areaFill: (() => {
+              const a = document.querySelector(".ck-line-area");
+              return a ? getComputedStyle(a).fill : "";
+            })(),
+            tickInk: getComputedStyle(document.querySelector(".ck-line-tick")).color,
+            ink,
+            tileCols: getComputedStyle(
+              document.querySelector(".ck-tiles"),
+            ).gridTemplateColumns.split(" ").length,
+          };
         });
+        check(
+          defects.length === 0,
+          `${name}: no chart text leaves its figure or overlaps another (${defects.slice(0, 6).join(" | ")})`,
+        );
+        check(m.overflow <= 0, `${name}: no horizontal scroll (${m.overflow}px over)`);
+        check(m.smallest >= 12, `${name}: no label under 12px (${m.smallest}px)`);
+        check(
+          m.stroke === "2px",
+          `${name}: the line is 2px whatever the plot's size (${m.stroke})`,
+        );
+        check(
+          m.charts >= 8 && m.tables >= 6,
+          `${name}: ${m.charts} charts, ${m.tables} tables behind them`,
+        );
+        check(m.lanes >= 2, `${name}: colliding events took a second lane (${m.lanes} lanes)`);
+        check(m.points === 18, `${name}: every value is a point (${m.points})`);
+        check(
+          m.quiet > 200 && m.quietShown === 0,
+          `${name}: a year of closes draws no dots (${m.quietShown} of ${m.quiet} shown)`,
+        );
+        check(
+          m.quietMinHeight >= 44 && m.quietGap <= 0.5,
+          `${name}: hidden values are full-height strips that tile the plot (${m.quietMinHeight}px tall, gap ${m.quietGap}px)`,
+        );
+        check(
+          m.area === 1 && m.areaFill && m.areaFill !== "none" && m.areaFill !== "rgb(0, 0, 0)",
+          `${name}: area draws one light fill (${m.areaFill})`,
+        );
+        check(m.tileCols === (width < 640 ? 2 : 4), `${name}: tiles ${m.tileCols} across`);
+        check(m.tickInk !== m.ink, `${name}: tick labels in the muted ink, not the text ink`);
+        check(errors.length === 0, `${name}: no page errors ${errors.join(" | ")}`);
+        if (process.env.CHARTKIT_SHOTS) {
+          await page.screenshot({
+            path: `${process.env.CHARTKIT_SHOTS}/demo-${width}-${dark ? "dark" : "light"}-${locale ?? "default"}.png`,
+            fullPage: true,
+          });
+        }
+        await page.close();
       }
-      await page.close();
     }
   }
 

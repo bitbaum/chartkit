@@ -44,9 +44,9 @@ export declare function xPosition(x: XValue): number;
 /** Whether an x value is a period rather than a number. */
 export declare function isDate(x: XValue): boolean;
 /** "2025", "Q2 2025", "Aug 2026", "3 Mar 2026"; a number as a number. */
-export declare function formatX(x: XValue): string;
+export declare function formatX(x: XValue, locale?: string): string;
 /** Values as the source gave them, grouped for reading; never rounded past three decimals. */
-export declare function formatNumber(value: number): string;
+export declare function formatNumber(value: number, locale?: string): string;
 /** A step of 1, 2 or 5 × 10ⁿ that splits the span into about `count` parts. */
 export declare function niceStep(span: number, count: number): number;
 export interface Scale {
@@ -101,9 +101,9 @@ export declare function hitColumns(placed: readonly Placed[]): {
  * Ticks along a time axis, at most `count` of them: on years when the span
  * is over three years, else on months, stepped so they stay apart.
  */
-export declare function timeTicks(x0: number, x1: number, count?: number): Tick[];
+export declare function timeTicks(x0: number, x1: number, count?: number, locale?: string): Tick[];
 /** Ticks for a numeric axis on round numbers. */
-export declare function numberTicks(x0: number, x1: number, count?: number): Tick[];
+export declare function numberTicks(x0: number, x1: number, count?: number, locale?: string): Tick[];
 /**
  * Shorten a label to `max` characters with an ellipsis, cutting at a word
  * where one falls in the last third. The full text travels in `title`.
@@ -126,7 +126,7 @@ export interface MonthTick extends Tick {
  * `step`-th so that at most `count` are labelled. A labelled January, and
  * the first label, name the year.
  */
-export declare function monthTicks(x0: number, x1: number, count?: number): MonthTick[];
+export declare function monthTicks(x0: number, x1: number, count?: number, locale?: string): MonthTick[];
 /** A share as "53%"; under one per cent, "<1%". */
 export declare function formatShare(share: number): string;
 //# sourceMappingURL=index.d.ts.map

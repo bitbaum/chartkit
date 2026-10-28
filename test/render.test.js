@@ -376,3 +376,36 @@ test("ColumnChart: periods in the order given, a loss goes down, a gap is a dash
   assert.match(html, /--ck-periods:3/);
   assert.doesNotMatch(html, /undefined|NaN/);
 });
+
+test("localized line, column and timeline charts retain numbers and translate accessible words", () => {
+  const props = {
+    series: [
+      { id: "v", label: "Umsatz", points: [{ x: "2025-03-31", y: 1234.5, preliminary: true }] },
+    ],
+    caption: "Umsatz",
+    locale: "de-DE",
+    periodLabel: "Zeitraum",
+    preliminaryLabel: "vorläufig",
+  };
+  for (const chart of [LineChart, ColumnChart]) {
+    const html = renderToStaticMarkup(h(chart, props));
+    assert.match(html, /Zeitraum/);
+    assert.match(html, /März/);
+    assert.match(html, /1\.234,5/);
+    assert.doesNotMatch(html, />Period</);
+  }
+  const line = renderToStaticMarkup(h(LineChart, props));
+  assert.match(line, /vorläufig/);
+  assert.doesNotMatch(line, /preliminary/);
+  const timeline = renderToStaticMarkup(
+    h(Timeline, {
+      events: [{ date: "2025-03-31", label: "Termin" }],
+      caption: "Termine",
+      locale: "de-DE",
+      tableLabels: { date: "Datum", event: "Ereignis", effect: "Wirkung" },
+    }),
+  );
+  assert.match(timeline, /März/);
+  assert.match(timeline, /Datum/);
+  assert.match(timeline, /Ereignis/);
+});

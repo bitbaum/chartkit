@@ -132,6 +132,8 @@ const CLOSES = (() => {
 })();
 
 function Demo() {
+  const locale = new URLSearchParams(location.search).get("locale") ?? undefined;
+  const localized = { locale, periodLabel: locale ? "Zeitraum" : undefined };
   return (
     <>
       <section>
@@ -149,6 +151,8 @@ function Demo() {
       <section>
         <h2>LineChart — one series, every point a link</h2>
         <LineChart
+          {...localized}
+          preliminaryLabel={locale ? "vorläufig" : undefined}
           series={[{ id: "backlog", label: "Gas Power equipment backlog", points: backlog }]}
           unit="GW"
           caption="GE Vernova Gas Power equipment backlog (firm orders), GW, Q1 2025 to Q2 2026. Source: GE Vernova earnings releases."
@@ -157,6 +161,8 @@ function Demo() {
       <section>
         <h2>LineChart — a year of daily closes, markers="auto" and area</h2>
         <LineChart
+          {...localized}
+          preliminaryLabel={locale ? "vorläufig" : undefined}
           series={[{ id: "close", label: "Close", points: CLOSES }]}
           unit="USD"
           yFrom="data"
@@ -169,6 +175,8 @@ function Demo() {
       <section>
         <h2>LineChart — two series on shared axes, from zero</h2>
         <LineChart
+          {...localized}
+          preliminaryLabel={locale ? "vorläufig" : undefined}
           series={[
             { id: "backlog", label: "Backlog (firm orders)", points: backlog },
             { id: "slots", label: "Slot reservation agreements", points: slots },
@@ -221,6 +229,7 @@ function Demo() {
       <section>
         <h2>ColumnChart — periods in order, a loss below zero</h2>
         <ColumnChart
+          {...localized}
           series={[
             {
               id: "revenue",
@@ -252,6 +261,8 @@ function Demo() {
       <section>
         <h2>Timeline — events in lanes</h2>
         <Timeline
+          locale={locale}
+          tableLabels={locale ? { date: "Datum", event: "Ereignis", effect: "Wirkung" } : undefined}
           events={[...EVENTS]}
           caption="Events on Substrata's bottlenecks, December 2025 to September 2026. Green moved a bottleneck looser, red tighter."
         />

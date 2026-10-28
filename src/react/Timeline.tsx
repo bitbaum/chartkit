@@ -18,6 +18,8 @@ export interface TimelineProps {
   /** ISO dates. Left out, the axis runs from the month of the first event to the month after the last. */
   from?: string;
   to?: string;
+  locale?: string;
+  tableLabels?: { date: string; event: string; effect: string };
 }
 
 /**
@@ -36,7 +38,7 @@ const LABEL = 30;
  * right in the left part of the axis and to the left near its end, and is
  * never wider than the room to its neighbour.
  */
-export function Timeline({ events, caption, from, to }: TimelineProps) {
+export function Timeline({ events, caption, from, to, locale, tableLabels }: TimelineProps) {
   const sorted = [...events].sort((a, b) => xPosition(a.date) - xPosition(b.date));
   const times = sorted.map((e) => xPosition(e.date));
   const first = times[0] ?? Date.now();
@@ -51,11 +53,15 @@ export function Timeline({ events, caption, from, to }: TimelineProps) {
   );
   const lane = lanes(spans, 1);
   const laneCount = Math.max(1, ...lane.map((l) => l + 1));
-  const ticks = monthTicks(x0, x1);
+  const ticks = monthTicks(x0, x1, 6, locale);
   let labelled = 0;
   const table = {
-    head: ["Date", "Event", "Effect"],
-    rows: sorted.map((e) => [formatX(e.date), e.label, e.tone ?? ""]),
+    head: [
+      tableLabels?.date ?? "Date",
+      tableLabels?.event ?? "Event",
+      tableLabels?.effect ?? "Effect",
+    ],
+    rows: sorted.map((e) => [formatX(e.date, locale), e.label, e.tone ?? ""]),
   };
   return (
     <ChartFigure kind="timeline" caption={caption} table={table}>
@@ -72,7 +78,7 @@ export function Timeline({ events, caption, from, to }: TimelineProps) {
               const room = right
                 ? Math.min(100, ...mates.filter(([a]) => a >= pos).map(([a]) => a)) - pos
                 : pos - Math.max(0, ...mates.filter(([, b]) => b <= pos).map(([, b]) => b));
-              const text = `${formatX(e.date)}: ${e.label}`;
+              const text = `${formatX(e.date, locale)}: ${e.label}`;
               return (
                 <MaybeLink
                   key={e.date + e.label}

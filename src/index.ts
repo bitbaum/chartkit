@@ -64,20 +64,27 @@ export function isDate(x: XValue): boolean {
 }
 
 /** "2025", "Q2 2025", "Aug 2026", "3 Mar 2026"; a number as a number. */
-export function formatX(x: XValue): string {
-  if (typeof x === "number") return formatNumber(x);
+export function formatX(x: XValue, locale?: string): string {
+  if (typeof x === "number") return formatNumber(x, locale);
   const q = x.match(/^(\d{4})-Q([1-4])$/);
   if (q) return `Q${q[2]} ${q[1]}`;
   const m = x.match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/);
   if (!m) return x;
   if (!m[2]) return m[1];
+  if (locale)
+    return new Intl.DateTimeFormat(locale, {
+      year: "numeric",
+      month: "short",
+      ...(m[3] ? { day: "numeric" as const } : {}),
+      timeZone: "UTC",
+    }).format(new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, m[3] ? Number(m[3]) : 1)));
   const month = MONTHS[Number(m[2]) - 1];
   return m[3] ? `${Number(m[3])} ${month} ${m[1]}` : `${month} ${m[1]}`;
 }
 
 /** Values as the source gave them, grouped for reading; never rounded past three decimals. */
-export function formatNumber(value: number): string {
-  return value.toLocaleString("en", { maximumFractionDigits: 3 });
+export function formatNumber(value: number, locale = "en"): string {
+  return value.toLocaleString(locale, { maximumFractionDigits: 3 });
 }
 
 /** A step of 1, 2 or 5 × 10ⁿ that splits the span into about `count` parts. */
@@ -201,8 +208,8 @@ export function hitColumns(placed: readonly Placed[]): { left: number; width: nu
  * Ticks along a time axis, at most `count` of them: on years when the span
  * is over three years, else on months, stepped so they stay apart.
  */
-export function timeTicks(x0: number, x1: number, count = 5): Tick[] {
-  if (!(x1 > x0)) return [{ pos: 50, label: formatMs(x0, "month") }];
+export function timeTicks(x0: number, x1: number, count = 5, locale?: string): Tick[] {
+  if (!(x1 > x0)) return [{ pos: 50, label: formatMs(x0, "month", locale) }];
   const span = x1 - x0;
   const year = 365.25 * 86_400_000;
   const ticks: Tick[] = [];
@@ -231,7 +238,7 @@ export function timeTicks(x0: number, x1: number, count = 5): Tick[] {
       if (t >= x0 && (m % step === 0 || step === 1)) {
         ticks.push({
           pos: pos(t),
-          label: m === 0 || ticks.length === 0 ? `${MONTHS[m]} ${y}` : MONTHS[m],
+          label: monthLabel(Date.UTC(y, m, 1), m === 0 || ticks.length === 0, locale),
         });
       }
       m++;
@@ -240,19 +247,28 @@ export function timeTicks(x0: number, x1: number, count = 5): Tick[] {
   return ticks;
 }
 
-function formatMs(t: number, unit: "year" | "month"): string {
+function monthLabel(t: number, year: boolean, locale?: string): string {
   const d = new Date(t);
-  return unit === "year"
-    ? String(d.getUTCFullYear())
-    : `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  return locale
+    ? new Intl.DateTimeFormat(locale, {
+        month: "short",
+        ...(year ? { year: "numeric" as const } : {}),
+        timeZone: "UTC",
+      }).format(d)
+    : `${MONTHS[d.getUTCMonth()]}${year ? ` ${d.getUTCFullYear()}` : ""}`;
+}
+
+function formatMs(t: number, unit: "year" | "month", locale?: string): string {
+  const d = new Date(t);
+  return unit === "year" ? String(d.getUTCFullYear()) : monthLabel(t, true, locale);
 }
 
 /** Ticks for a numeric axis on round numbers. */
-export function numberTicks(x0: number, x1: number, count = 5): Tick[] {
+export function numberTicks(x0: number, x1: number, count = 5, locale?: string): Tick[] {
   const scale = valueScale([x0, x1], "data", count);
   return scale.ticks
     .filter((v) => v >= x0 && v <= x1)
-    .map((v) => ({ pos: ((v - x0) / (x1 - x0 || 1)) * 100, label: formatNumber(v) }));
+    .map((v) => ({ pos: ((v - x0) / (x1 - x0 || 1)) * 100, label: formatNumber(v, locale) }));
 }
 
 /**
@@ -299,7 +315,7 @@ export interface MonthTick extends Tick {
  * `step`-th so that at most `count` are labelled. A labelled January, and
  * the first label, name the year.
  */
-export function monthTicks(x0: number, x1: number, count = 6): MonthTick[] {
+export function monthTicks(x0: number, x1: number, count = 6, locale?: string): MonthTick[] {
   if (!(x1 > x0)) return [];
   const d0 = new Date(x0);
   let y = d0.getUTCFullYear();
@@ -320,11 +336,7 @@ export function monthTicks(x0: number, x1: number, count = 6): MonthTick[] {
   return starts.map((t, i) => {
     const major = i % step === 0;
     const d = new Date(t);
-    const label = major
-      ? d.getUTCMonth() === 0 || labelled++ === 0
-        ? `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`
-        : MONTHS[d.getUTCMonth()]
-      : "";
+    const label = major ? monthLabel(t, d.getUTCMonth() === 0 || labelled++ === 0, locale) : "";
     return { pos: ((t - x0) / (x1 - x0)) * 100, label, major };
   });
 }

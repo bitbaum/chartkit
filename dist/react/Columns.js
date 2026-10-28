@@ -29,7 +29,7 @@ export function columnScale(values, tickCount = 3) {
  * on hover and focus; a link when it has a source. The table carries every
  * figure, a missing one as "—".
  */
-export function ColumnChart({ series, unit, caption, height = 176 }) {
+export function ColumnChart({ series, unit, caption, height = 176, locale, periodLabel = "Period", }) {
     const periods = [];
     for (const s of series)
         for (const p of s.points)
@@ -39,16 +39,16 @@ export function ColumnChart({ series, unit, caption, height = 176 }) {
     const scale = columnScale(values);
     const pct = (v) => ((scale.max - v) / (scale.max - scale.min)) * 100;
     const zero = pct(0);
-    const yTicks = scale.ticks.map((v) => ({ pos: pct(v), label: formatNumber(v) }));
+    const yTicks = scale.ticks.map((v) => ({ pos: pct(v), label: formatNumber(v, locale) }));
     const gutter = Math.max(...yTicks.map((t) => t.label.length)) + 1;
     const unitText = unit ? ` ${unit}` : "";
     const table = {
-        head: ["Period", ...series.map((s) => (unit ? `${s.label} (${unit})` : s.label))],
+        head: [periodLabel, ...series.map((s) => (unit ? `${s.label} (${unit})` : s.label))],
         rows: periods.map((x) => [
-            formatX(x),
+            formatX(x, locale),
             ...series.map((s) => {
                 const p = s.points.find((q) => q.x === x);
-                return p && p.y !== null ? formatNumber(p.y) : "—";
+                return p && p.y !== null ? formatNumber(p.y, locale) : "—";
             }),
         ]),
     };
@@ -62,12 +62,12 @@ export function ColumnChart({ series, unit, caption, height = 176 }) {
                                     return _jsx("span", { className: "ck-col-gap" }, s.id);
                                 const top = Math.min(pct(p.y), zero);
                                 const size = Math.abs(pct(p.y) - zero);
-                                return (_jsx(Column, { point: p, index: (i % 6) + 1, top: top, size: size, negative: p.y < 0, unit: unitText, label: series.length > 1 ? s.label : undefined, end: at >= periods.length / 2 }, s.id));
-                            }) }, String(x)))) })] }), _jsx("div", { className: "ck-col-axis", "aria-hidden": "true", children: periods.map((x) => (_jsx("span", { className: "ck-col-xtick", title: formatX(x), children: truncate(formatX(x), PERIOD_MAX) }, String(x)))) }), series.length > 1 && (_jsx("ol", { className: "ck-legend", "aria-hidden": "true", children: series.map((s, i) => (_jsxs("li", { className: "ck-legend-item", children: [_jsx("span", { className: "ck-legend-swatch", "data-series": (i % 6) + 1 }), s.label] }, s.id))) }))] }));
+                                return (_jsx(Column, { point: p, locale: locale, index: (i % 6) + 1, top: top, size: size, negative: p.y < 0, unit: unitText, label: series.length > 1 ? s.label : undefined, end: at >= periods.length / 2 }, s.id));
+                            }) }, String(x)))) })] }), _jsx("div", { className: "ck-col-axis", "aria-hidden": "true", children: periods.map((x) => (_jsx("span", { className: "ck-col-xtick", title: formatX(x, locale), children: truncate(formatX(x, locale), PERIOD_MAX) }, String(x)))) }), series.length > 1 && (_jsx("ol", { className: "ck-legend", "aria-hidden": "true", children: series.map((s, i) => (_jsxs("li", { className: "ck-legend-item", children: [_jsx("span", { className: "ck-legend-swatch", "data-series": (i % 6) + 1 }), s.label] }, s.id))) }))] }));
 }
-function Column({ point, index, top, size, negative, unit, label, end, }) {
-    const value = formatNumber(point.y);
-    const period = formatX(point.x);
+function Column({ point, index, top, size, negative, unit, label, end, locale, }) {
+    const value = formatNumber(point.y, locale);
+    const period = formatX(point.x, locale);
     const text = `${value}${unit}, ${period}${label ? ` — ${label}` : ""}${point.note ? `. ${point.note}` : ""}`;
     const className = `ck-col${negative ? " ck-col-neg" : ""}${end ? " ck-pt-end" : ""}`;
     const style = { top: `${top}%`, height: `${Math.max(size, 0.5)}%` };

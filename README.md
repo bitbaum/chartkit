@@ -15,7 +15,7 @@ chartkit is the drawing.)
 ## Install
 
 ```sh
-pnpm add @bitbaum/chartkit@^0.3.0
+pnpm add @bitbaum/chartkit@^0.7.0
 ```
 
 Install releases from npm, never a commit or a branch, for the reason chatkit's
@@ -46,7 +46,12 @@ import "@bitbaum/chartkit/styles.css";
 <ShareBars rows={[{ label: "BlackRock", share: 0.074 }]} other={0.926} otherLabel="Others, each below 5%" caption="…" />
 <ColumnChart series={[{ id: "rev", label: "Revenue", points: [{ x: "FY2024", y: 61 }, { x: "FY2025", y: -4, href: "…" }] }]} unit="USD bn" caption="…" />
 <Sparkline points={points} label="Backlog over six quarters" />
+<Sparkline                           // a null breaks the line; a tone colours that point's dot
+  points={[{ x: "2026-10-01", y: 4, tone: "positive" }, { x: "2026-10-02", y: null }, { x: "2026-10-03", y: 1, tone: "negative" }]}
+  label="Mood over three days: one good, one unrecorded, one bad"
+/>
 <Meter value={12} max={12} label="Severity" href="/methods/severity" />
+<Meter value={3} max={10} label="Risk" tone="negative" showValue={false} />  // the caller prints "3/10"
 <Timeline events={[{ date: "2026-07-17", label: "…", tone: "down", href: "…" }]} caption="…" />
 <StatTiles tiles={[{ label: "Bottlenecks mapped", value: 33, href: "/bottlenecks" }]} />
 ```
@@ -63,6 +68,20 @@ the zero line, and a missing figure as no column and "—" in the table. Every p
 of a `Timeline` is an anchor when it has an `href`, with its value, period and
 note on hover and on keyboard focus.
 
+A dated `LineChart` picks its ticks for whatever span it is given: days for
+a week of data, Mondays for a month, months for a year, years for decades —
+at most five, the coarsest step that still gives three, the first label and
+the first of each new year naming the year. An axis is never left bare: a
+span no step ticks inside is labelled at its two ends.
+
+`ColumnChart` prints every period label whole. When there are more periods
+than the plot has room for, every second (third, …) label steps back so the
+rest fit, and nothing is cut: "2015 2017 2019 …" on a phone, every year on a
+desktop. The step is planned on the server for bands of plot width and
+applied by a container query on the axis (no measurement, no effect); the
+table behind the chart still holds every period. Only a label wider than the
+whole plot is ever shortened.
+
 `markers` says which values of a `LineChart` carry a dot: `all` (the default,
 as before) every one; `none` the line alone; `ends` only each series' last
 value; `auto` every one up to 60 points on a series and none above — 250 daily
@@ -74,6 +93,15 @@ cursor and the value. The table behind the chart holds every value either way.
 `area` adds a light fill under each line in that series' own `--ck-series-*`
 colour — never a literal.
 
+`Meter` takes `tone` — `accent` (the default), `neutral`, `positive`,
+`warning` or `negative`, each a `--ck-*` token — and `showValue={false}` to
+draw the track alone when the caller already prints the figure; the value
+stays in the meter's role (`aria-valuenow`), name and `title`. A `Sparkline`
+point may be `y: null`, which breaks the line there instead of drawing a
+zero (a value alone between two gaps is a dot), and may carry a `tone`
+(`positive`, `warning`, `negative`, `neutral`) that colours its dot. Colour
+is never the only sign: say in the sparkline's `label` what the tones mean.
+
 ## What every chart guarantees
 
 - **It renders on the server.** Pure SVG and HTML, no effect, no measurement.
@@ -83,10 +111,11 @@ colour — never a literal.
 - **Nothing is reachable only by pointing.** Each chart is a `<figure
   class="ck-chart">` with its caption and a visually hidden `<table>` of the
   same values; the decorative parts are `aria-hidden`, the anchors are not.
-- **No label clips or overlaps.** Long labels truncate with an ellipsis and
-  carry the full text in `title`; bar labels have a least column; timeline
-  events that would collide take a second lane; the y gutter is as wide as
-  its widest number. `@bitbaum/chartkit/audit` measures it (below).
+- **No label clips or overlaps.** Long names truncate with an ellipsis and
+  carry the full text in `title`; column periods thin out instead, so a year
+  or a month is never cut; bar labels have a least column; timeline events
+  that would collide take a second lane; the y gutter is as wide as its
+  widest number. `@bitbaum/chartkit/audit` measures it (below).
 - **Colour and type come only from `--ck-*` variables**, which default to
   design-tokens and can be set once on `:root`: `--ck-ink`, `--ck-ink-muted`,
   `--ck-line`, `--ck-bg`, `--ck-accent`, `--ck-up`, `--ck-down`,

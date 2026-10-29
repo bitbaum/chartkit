@@ -1,8 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { formatNumber, formatX, niceStep, truncate } from "../index.js";
+import { columnLabelPlan, formatNumber, formatX, niceStep } from "../index.js";
 import { ChartFigure } from "./Figure.js";
-/** Period labels longer than this get an ellipsis and keep the full text in `title`. */
-const PERIOD_MAX = 8;
 /**
  * A value axis that always holds zero, on round steps, below zero as well as
  * above: a loss is a column that goes down, not a short column going up.
@@ -61,6 +59,10 @@ export function ColumnChart({ series, unit, caption, height = 176, locale, perio
     const yTicks = scale.ticks.map((v) => ({ pos: pct(v), label: formatNumber(v, locale) }));
     const gutter = Math.max(...yTicks.map((t) => t.label.length)) + 1;
     const unitText = unit ? ` ${unit}` : "";
+    const labels = periods.map((x) => formatX(x, locale));
+    // Too many periods for the plot's width: every n-th label steps back (by a
+    // container query on the axis) so the rest are printed whole. Nothing is cut.
+    const hidden = columnLabelPlan(labels);
     const table = {
         head: [periodLabel, ...series.map((s) => (unit ? `${s.label} (${unit})` : s.label))],
         rows: periods.map((x) => [
@@ -85,7 +87,7 @@ export function ColumnChart({ series, unit, caption, height = 176, locale, perio
                                 const top = Math.min(start, end);
                                 const size = Math.abs(end - start);
                                 return (_jsx(Column, { point: p, locale: locale, index: (i % 6) + 1, top: top, stacked: stacked, size: size, negative: p.y < 0, unit: unitText, label: series.length > 1 ? s.label : undefined, end: at >= periods.length / 2 }, s.id));
-                            }) }, String(x)))) })] }), _jsx("div", { className: "ck-col-axis", "aria-hidden": "true", children: periods.map((x) => (_jsx("span", { className: "ck-col-xtick", title: formatX(x, locale), children: truncate(formatX(x, locale), PERIOD_MAX) }, String(x)))) }), series.length > 1 && (_jsx("ol", { className: "ck-legend", "aria-hidden": "true", children: series.map((s, i) => (_jsxs("li", { className: "ck-legend-item", children: [_jsx("span", { className: "ck-legend-swatch", "data-series": (i % 6) + 1 }), s.label] }, s.id))) }))] }));
+                            }) }, String(x)))) })] }), _jsx("div", { className: "ck-col-axis", "aria-hidden": "true", children: periods.map((x, i) => (_jsx("span", { className: "ck-col-xtick", title: labels[i], "data-hide": hidden[i].length ? hidden[i].join(" ") : undefined, children: _jsx("span", { className: "ck-col-xlabel", children: labels[i] }) }, String(x)))) }), series.length > 1 && (_jsx("ol", { className: "ck-legend", "aria-hidden": "true", children: series.map((s, i) => (_jsxs("li", { className: "ck-legend-item", children: [_jsx("span", { className: "ck-legend-swatch", "data-series": (i % 6) + 1 }), s.label] }, s.id))) }))] }));
 }
 function Column({ point, index, top, size, negative, unit, label, end, locale, stacked, }) {
     const value = formatNumber(point.y, locale);

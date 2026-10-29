@@ -20,6 +20,7 @@ import {
   StatTiles,
   Timeline,
 } from "../dist/react/index.js";
+import { COLUMN_AXIS_WIDTHS } from "../dist/index.js";
 
 const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const points = [
@@ -571,4 +572,135 @@ test("BarChart: ordinal input order, semantic tones and localized accessible val
     rows.map((r) => r.label),
     ["Unzufrieden", "Neutral", "Zufrieden"],
   );
+});
+
+test("LineChart: thirty daily values get date labels, not a bare axis", () => {
+  const days = Array.from({ length: 27 }, (_, i) => ({
+    x: `2026-10-${String(i + 1).padStart(2, "0")}`,
+    y: 10 + (i % 5),
+  }));
+  const html = renderToStaticMarkup(
+    h(LineChart, { series: [{ id: "d", label: "Daily", points: days }], caption: "October" }),
+  );
+  const ticks = [...html.matchAll(/class="ck-line-xtick[^"]*"[^>]*>([^<]+)</g)].map((m) => m[1]);
+  assert.deepEqual(ticks, ["5 Oct 2026", "12 Oct", "19 Oct", "26 Oct"]);
+  assert.match(html, /<th scope="row">1 Oct 2026<\/th><td>10<\/td>/);
+});
+
+test("ColumnChart: years and months are thinned, never cut; every width band has its rule", () => {
+  const years = Array.from({ length: 12 }, (_, i) => ({ x: String(2015 + i), y: i + 1 }));
+  const html = renderToStaticMarkup(
+    h(ColumnChart, { series: [{ id: "y", label: "Count", points: years }], caption: "Years" }),
+  );
+  const labels = [...html.matchAll(/class="ck-col-xlabel">([^<]+)</g)].map((m) => m[1]);
+  assert.deepEqual(
+    labels,
+    years.map((p) => p.x),
+    "every year printed whole, no ellipsis",
+  );
+  assert.doesNotMatch(html, /…/);
+  assert.match(html, /class="ck-col-xtick" title="2015"><span/, "the first is always shown");
+  assert.match(html, /class="ck-col-xtick" title="2016" data-hide="[\d ]*320[\d ]*"/);
+  const months = renderToStaticMarkup(
+    h(ColumnChart, {
+      series: [
+        {
+          id: "m",
+          label: "Count",
+          points: Array.from({ length: 12 }, (_, i) => ({
+            x: `2025-${String(i + 1).padStart(2, "0")}`,
+            y: i,
+          })),
+        },
+      ],
+      caption: "Months",
+    }),
+  );
+  assert.match(months, /class="ck-col-xlabel">Sep 2025</, "a long period is no longer cut at 8");
+  assert.match(css, /\.ck-col-axis \{[^}]*container: ck-col-axis \/ inline-size/);
+  for (const width of COLUMN_AXIS_WIDTHS) {
+    assert.match(
+      css,
+      new RegExp(`\\.ck-col-xtick\\[data-hide~="${width}"\\] > \\.ck-col-xlabel`),
+      `a container rule hides labels planned out at ${width}px`,
+    );
+  }
+  const few = renderToStaticMarkup(
+    h(ColumnChart, { series: [{ id: "y", label: "C", points: years.slice(0, 3) }], caption: "c" }),
+  );
+  assert.doesNotMatch(few, /data-hide="[^"]*[1-9]/, "three years fit from the narrowest band up");
+});
+
+test("Meter: a tone by token, and the value can be left to the caller", () => {
+  const toned = renderToStaticMarkup(
+    h(Meter, { value: 3, max: 10, label: "Risk", tone: "negative", showValue: false }),
+  );
+  assert.doesNotMatch(toned, /ck-meter-value/, "no printed value");
+  assert.match(toned, /title="Risk: 3 of 10"/, "the value stays in the title");
+  assert.match(
+    toned,
+    /role="meter" aria-valuemin="0" aria-valuemax="10" aria-valuenow="3" aria-label="Risk" data-tone="negative"/,
+  );
+  for (const tone of ["neutral", "positive", "warning", "negative"])
+    assert.match(
+      css,
+      new RegExp(
+        `\\.ck-meter-track\\[data-tone="${tone}"\\] \\.ck-meter-fill \\{\\s*background: var\\(--ck-`,
+      ),
+    );
+  const plain = renderToStaticMarkup(h(Meter, { value: 3, max: 10, label: "Risk" }));
+  assert.match(plain, /<span class="ck-meter-value">3<\/span>/, "left out, as before");
+  assert.doesNotMatch(plain, /data-tone/);
+});
+
+test("Sparkline: null breaks the line, a lone value is a dot, tones colour their points", () => {
+  const html = renderToStaticMarkup(
+    h(Sparkline, {
+      label: "Mood over seven days: two good, one bad",
+      points: [
+        { x: "2026-10-01", y: 3, tone: "positive" },
+        { x: "2026-10-02", y: 4 },
+        { x: "2026-10-03", y: null },
+        { x: "2026-10-04", y: 2, tone: "negative" },
+        { x: "2026-10-05", y: null },
+        { x: "2026-10-06", y: 5 },
+        { x: "2026-10-07", y: 1, tone: "positive" },
+      ],
+    }),
+  );
+  const d = html.match(/<path class="ck-spark-line" d="([^"]+)"/)[1];
+  assert.equal((d.match(/M/g) ?? []).length, 2, "two runs, so two strokes");
+  assert.doesNotMatch(d, /100\.00(?! )/, "a gap is not drawn as zero");
+  assert.equal((d.match(/L/g) ?? []).length, 2);
+  assert.equal((html.match(/class="ck-spark-solo"/g) ?? []).length, 1, "the lone value");
+  assert.match(html, /class="ck-spark-solo" data-tone="negative"/);
+  assert.equal((html.match(/class="ck-spark-dot" data-tone="positive"/g) ?? []).length, 1);
+  assert.match(
+    html,
+    /class="ck-spark-end" data-tone="positive" d="M100\.00 [\d.]+h0"/,
+    "the end dot keeps its tone",
+  );
+  assert.match(html, /aria-label="Mood over seven days: two good, one bad"/);
+  assert.doesNotMatch(html, /NaN|undefined/);
+  for (const tone of ["positive", "warning", "negative"])
+    assert.match(
+      css,
+      new RegExp(`\\.ck-spark \\[data-tone="${tone}"\\] \\{\\s*stroke: var\\(--ck-`),
+    );
+  assert.equal(
+    renderToStaticMarkup(
+      h(Sparkline, {
+        label: "x",
+        points: [
+          { x: 1, y: null },
+          { x: 2, y: null },
+        ],
+      }),
+    ),
+    "",
+    "nothing to draw: nothing",
+  );
+  const before = renderToStaticMarkup(h(Sparkline, { points, label: "Backlog" }));
+  assert.equal((before.match(/<path/g) ?? []).length, 2, "no nulls, no tones: a line and its end");
+  assert.match(before, /class="ck-spark-end" d="M100\.00 /);
 });

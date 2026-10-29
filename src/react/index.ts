@@ -16,7 +16,14 @@ export { ColumnChart, columnScale } from "./Columns.js";
 export type { ColumnChartProps, ColumnPoint, ColumnSeries } from "./Columns.js";
 export type { BarChartProps, BarRow, ShareBarsProps, ShareRow } from "./Bars.js";
 export { Sparkline, Meter, StatTiles } from "./Small.js";
-export type { SparklineProps, MeterProps, StatTile, StatTilesProps } from "./Small.js";
+export type {
+  ChartTone,
+  SparklineProps,
+  SparkPoint,
+  MeterProps,
+  StatTile,
+  StatTilesProps,
+} from "./Small.js";
 export { Timeline } from "./Timeline.js";
 export type { TimelineProps, TimelineEvent } from "./Timeline.js";
 export { ChartFigure, DataTable } from "./Figure.js";

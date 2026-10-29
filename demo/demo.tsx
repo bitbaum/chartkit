@@ -132,6 +132,38 @@ const CLOSES = (() => {
   return out;
 })();
 
+// Illustrative only: 27 daily values, 1–27 October 2026. The short range
+// that once drew no date label at all.
+const OCTOBER = Array.from({ length: 27 }, (_, i) => ({
+  x: `2026-10-${String(i + 1).padStart(2, "0")}`,
+  y: 40 + ((i * 7) % 11) + i / 3,
+}));
+
+// Illustrative only: twelve years and twelve months of counts, the periods
+// that once read "20…" and "J…" on a phone.
+const YEARS = Array.from({ length: 12 }, (_, i) => ({
+  x: String(2015 + i),
+  y: 20 + ((i * 5) % 9),
+}));
+const MONTHS = Array.from({ length: 12 }, (_, i) => ({
+  x: `2025-${String(i + 1).padStart(2, "0")}`,
+  y: 3 + ((i * 3) % 7),
+}));
+
+// Illustrative only: a fortnight of days, three unrecorded, coloured by how they went.
+const DAYS = [3, 4, null, 2, null, 4, 5, null, 3, 1, 4, 5, 2, 5].map((y, i) => ({
+  x: `2026-10-${String(i + 1).padStart(2, "0")}`,
+  y,
+  tone:
+    y === null
+      ? undefined
+      : y >= 4
+        ? ("positive" as const)
+        : y <= 2
+          ? ("negative" as const)
+          : undefined,
+}));
+
 function Demo() {
   const locale = new URLSearchParams(location.search).get("locale") ?? undefined;
   const localized = { locale, periodLabel: locale ? "Zeitraum" : undefined };
@@ -171,6 +203,15 @@ function Demo() {
           area
           height={240}
           caption="Illustrative daily closes over one year, USD (generated, not a quote)."
+        />
+      </section>
+      <section>
+        <h2>LineChart — a month of days</h2>
+        <LineChart
+          {...localized}
+          series={[{ id: "october", label: "Daily value", points: OCTOBER }]}
+          markers="none"
+          caption="Illustrative daily values, 1 to 27 October 2026 (generated, not a measurement)."
         />
       </section>
       <section>
@@ -281,6 +322,19 @@ function Demo() {
         />
       </section>
       <section>
+        <h2>ColumnChart — twelve years and twelve months, thinned on a phone</h2>
+        <ColumnChart
+          {...localized}
+          series={[{ id: "years", label: "Count", points: YEARS }]}
+          caption="Illustrative counts by year, 2015 to 2026 (generated, not a finding)."
+        />
+        <ColumnChart
+          {...localized}
+          series={[{ id: "months", label: "Count", points: MONTHS }]}
+          caption="Illustrative counts by month, 2025 (generated, not a finding)."
+        />
+      </section>
+      <section>
         <h2>Timeline — events in lanes</h2>
         <Timeline
           locale={locale}
@@ -359,6 +413,16 @@ function Demo() {
           </span>
           <span>
             Severity <Meter value={7} max={12} label="Severity" />
+          </span>
+          <span>
+            Risk 3/10 <Meter value={3} max={10} label="Risk" tone="negative" showValue={false} />
+          </span>
+          <span>
+            Fortnight{" "}
+            <Sparkline
+              points={DAYS}
+              label="A fortnight of days, three unrecorded: six good, three bad (illustrative)"
+            />
           </span>
         </p>
       </section>

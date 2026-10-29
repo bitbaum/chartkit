@@ -154,50 +154,130 @@ export function hitColumns(placed) {
     });
 }
 /**
- * Ticks along a time axis, at most `count` of them: on years when the span
- * is over three years, else on months, stepped so they stay apart.
+ * The steps a time axis may tick on, finest first: days, weeks (from a
+ * Monday), months, years. Each names its unit and how many of it.
+ */
+const TIME_STEPS = [
+    ["day", 1],
+    ["day", 2],
+    ["week", 1],
+    ["week", 2],
+    ["month", 1],
+    ["month", 2],
+    ["month", 3],
+    ["month", 6],
+    ["year", 1],
+    ["year", 2],
+    ["year", 5],
+    ["year", 10],
+    ["year", 20],
+    ["year", 25],
+    ["year", 50],
+    ["year", 100],
+];
+const DAY = 86_400_000;
+/** 1970-01-05 was a Monday: weeks are counted from it. */
+const MONDAY = 4 * DAY;
+/** The instants a step ticks on between two instants, or null when there would be far too many. */
+function stepInstants(x0, x1, unit, n, limit) {
+    const out = [];
+    if (unit === "day" || unit === "week") {
+        const size = (unit === "day" ? 1 : 7) * n * DAY;
+        if ((x1 - x0) / size > limit * 4)
+            return null;
+        const origin = unit === "day" ? 0 : MONDAY;
+        for (let t = origin + Math.ceil((x0 - origin) / size) * size; t <= x1; t += size)
+            out.push(t);
+        return out;
+    }
+    const d0 = new Date(x0);
+    if (unit === "month") {
+        if ((x1 - x0) / (n * 28 * DAY) > limit * 4)
+            return null;
+        let y = d0.getUTCFullYear();
+        let m = d0.getUTCMonth();
+        for (;;) {
+            const t = Date.UTC(y, m, 1);
+            if (t > x1)
+                break;
+            if (t >= x0 && m % n === 0)
+                out.push(t);
+            if (++m > 11) {
+                m = 0;
+                y++;
+            }
+        }
+        return out;
+    }
+    if ((x1 - x0) / (n * 365 * DAY) > limit * 4)
+        return null;
+    for (let y = d0.getUTCFullYear();; y++) {
+        const t = Date.UTC(y, 0, 1);
+        if (t > x1)
+            break;
+        if (t >= x0 && y % n === 0)
+            out.push(t);
+    }
+    return out;
+}
+/**
+ * Ticks along a time axis, at most `count` of them, for any span: days for
+ * a week of data, weeks for a month, months for a year, years for decades.
+ * Of the steps that give between three and `count` ticks the coarsest wins
+ * (a quarter-year of months, not of fortnights); with none, the finest that
+ * fits. The first label, and the first in each new year, name the year. An
+ * axis is never left empty: a span no step ticks inside is labelled at its
+ * two ends.
  */
 export function timeTicks(x0, x1, count = 5, locale) {
     if (!(x1 > x0))
         return [{ pos: 50, label: formatMs(x0, "month", locale) }];
     const span = x1 - x0;
-    const year = 365.25 * 86_400_000;
-    const ticks = [];
     const pos = (t) => ((t - x0) / span) * 100;
-    if (span > 3 * year) {
-        const y0 = new Date(x0).getUTCFullYear();
-        const y1 = new Date(x1).getUTCFullYear();
-        const step = Math.max(1, Math.ceil((y1 - y0 + 1) / count));
-        for (let y = y0 + 1; y <= y1; y += step) {
-            const t = Date.UTC(y, 0, 1);
-            if (t >= x0 && t <= x1)
-                ticks.push({ pos: pos(t), label: String(y) });
-        }
+    const fitting = [];
+    for (const [unit, n] of TIME_STEPS) {
+        const at = stepInstants(x0, x1, unit, n, count);
+        if (at && at.length > 0 && at.length <= count)
+            fitting.push({ unit, at });
     }
-    else {
-        const d0 = new Date(x0);
-        const months = Math.round(span / (year / 12)) + 1;
-        const step = Math.max(1, Math.ceil(months / count));
-        let y = d0.getUTCFullYear();
-        let m = d0.getUTCMonth() + 1;
-        for (let i = 0; i < months + 1; i++) {
-            if (m > 11) {
-                m = 0;
-                y++;
-            }
-            const t = Date.UTC(y, m, 1);
-            if (t > x1)
-                break;
-            if (t >= x0 && (m % step === 0 || step === 1)) {
-                ticks.push({
-                    pos: pos(t),
-                    label: monthLabel(Date.UTC(y, m, 1), m === 0 || ticks.length === 0, locale),
-                });
-            }
-            m++;
-        }
+    const pick = fitting.filter((f) => f.at.length >= Math.min(3, count)).at(-1) ??
+        fitting.find((f) => f.at.length >= 2) ??
+        fitting[0];
+    if (!pick) {
+        // Under a day, or between two ticks of every step: name the two ends.
+        const a = dayLabel(x0, true, locale);
+        const b = dayLabel(x1, true, locale);
+        return a === b
+            ? [{ pos: 50, label: a }]
+            : [
+                { pos: 0, label: a },
+                { pos: 100, label: b },
+            ];
     }
-    return ticks;
+    let year = NaN;
+    return pick.at.map((t) => {
+        const d = new Date(t);
+        const newYear = d.getUTCFullYear() !== year;
+        year = d.getUTCFullYear();
+        const label = pick.unit === "year"
+            ? String(year)
+            : pick.unit === "month"
+                ? monthLabel(t, newYear, locale)
+                : dayLabel(t, newYear, locale);
+        return { pos: pos(t), label };
+    });
+}
+/** "5 Oct", or "5 Oct 2026" with the year; in a locale, its own short form. */
+function dayLabel(t, year, locale) {
+    const d = new Date(t);
+    return locale
+        ? new Intl.DateTimeFormat(locale, {
+            day: "numeric",
+            month: "short",
+            ...(year ? { year: "numeric" } : {}),
+            timeZone: "UTC",
+        }).format(d)
+        : `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}${year ? ` ${d.getUTCFullYear()}` : ""}`;
 }
 function monthLabel(t, year, locale) {
     const d = new Date(t);
@@ -216,9 +296,11 @@ function formatMs(t, unit, locale) {
 /** Ticks for a numeric axis on round numbers. */
 export function numberTicks(x0, x1, count = 5, locale) {
     const scale = valueScale([x0, x1], "data", count);
-    return scale.ticks
+    const ticks = scale.ticks
         .filter((v) => v >= x0 && v <= x1)
         .map((v) => ({ pos: ((v - x0) / (x1 - x0 || 1)) * 100, label: formatNumber(v, locale) }));
+    // One value, or a span no round number falls in: name it rather than leave the axis bare.
+    return ticks.length ? ticks : [{ pos: x1 > x0 ? 0 : 50, label: formatNumber(x0, locale) }];
 }
 /**
  * Shorten a label to `max` characters with an ellipsis, cutting at a word
@@ -292,5 +374,85 @@ export function formatShare(share) {
     if (pct > 0 && pct < 1)
         return "<1%";
     return `${pct >= 10 ? pct.toFixed(0) : pct.toFixed(1).replace(/\.0$/, "")}%`;
+}
+/** The plot widths, in CSS px, at which a ColumnChart re-plans its period labels. */
+export const COLUMN_AXIS_WIDTHS = [
+    0, 160, 200, 240, 280, 320, 360, 400, 480, 560, 640, 720, 800, 880, 960, 1080, 1200,
+];
+/** The label size (0.75rem), the axis's column gap (0.5rem) and the least room between two labels. */
+const LABEL_PX = 12;
+const COLUMN_GAP_PX = 8;
+const LABEL_PAD_PX = 6;
+const WIDE = /[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f\uff00-\uff60\uffe0-\uffe6]|\p{Extended_Pictographic}/u;
+/**
+ * How wide a label is in the monospace label face, in CSS px, without a
+ * browser: 0.61em a character (every common monospace is 0.6), a full em
+ * for a wide (CJK) character or a pictograph. Generous on purpose: a label
+ * thought wider than it is costs a hidden neighbour; one thought narrower
+ * prints over it.
+ */
+export function labelWidth(text) {
+    let em = 0;
+    for (const ch of text)
+        em += WIDE.test(ch) ? 1 : 0.61;
+    return em * LABEL_PX;
+}
+/**
+ * Every how-many-th period label a row of columns can carry at a plot width:
+ * 1 when each fits its column, else the least step at which the labels shown
+ * (the first, then every step-th) neither touch nor leave the plot. A label
+ * wider than its column is centred on it and runs over its hidden
+ * neighbours; the first is held at the left edge and the last at the right.
+ * When not even one label fits beside another, only the first is shown.
+ */
+export function columnLabelStep(labels, plotWidth) {
+    const n = labels.length;
+    if (n <= 1)
+        return 1;
+    const pitch = (plotWidth + COLUMN_GAP_PX) / n;
+    const col = Math.max(0, pitch - COLUMN_GAP_PX);
+    const widths = labels.map(labelWidth);
+    const fits = (step) => {
+        let previous = -Infinity;
+        for (let i = 0; i < n; i += step) {
+            const w = widths[i];
+            const centre = i * pitch + col / 2;
+            let left = centre - w / 2;
+            if (w > col && i === 0)
+                left = 0;
+            else if (w > col && i === n - 1)
+                left = plotWidth - w;
+            if (left < -0.5 || left + w > plotWidth + 0.5)
+                return false;
+            if (left < previous + LABEL_PAD_PX)
+                return false;
+            previous = left + w;
+        }
+        return true;
+    };
+    for (let step = 1; step < n; step++)
+        if (fits(step))
+            return step;
+    return n;
+}
+/**
+ * For each period label of a ColumnChart, the widths of
+ * `COLUMN_AXIS_WIDTHS` at which it steps back so its neighbours fit — the
+ * step is planned for the narrowest plot of each band, so it holds across
+ * the band. A label is thinned out, never cut: the CSS hides it with a
+ * container query on the axis. Empty for a label shown at every width.
+ */
+export function columnLabelPlan(labels) {
+    const hidden = labels.map(() => []);
+    for (const width of COLUMN_AXIS_WIDTHS) {
+        const step = columnLabelStep(labels, Math.max(width, 100));
+        if (step === 1)
+            continue;
+        labels.forEach((_, i) => {
+            if (i % step !== 0)
+                hidden[i].push(width);
+        });
+    }
+    return hidden;
 }
 //# sourceMappingURL=index.js.map

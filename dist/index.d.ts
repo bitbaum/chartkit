@@ -98,8 +98,13 @@ export declare function hitColumns(placed: readonly Placed[]): {
     width: number;
 }[];
 /**
- * Ticks along a time axis, at most `count` of them: on years when the span
- * is over three years, else on months, stepped so they stay apart.
+ * Ticks along a time axis, at most `count` of them, for any span: days for
+ * a week of data, weeks for a month, months for a year, years for decades.
+ * Of the steps that give between three and `count` ticks the coarsest wins
+ * (a quarter-year of months, not of fortnights); with none, the finest that
+ * fits. The first label, and the first in each new year, name the year. An
+ * axis is never left empty: a span no step ticks inside is labelled at its
+ * two ends.
  */
 export declare function timeTicks(x0: number, x1: number, count?: number, locale?: string): Tick[];
 /** Ticks for a numeric axis on round numbers. */
@@ -129,4 +134,31 @@ export interface MonthTick extends Tick {
 export declare function monthTicks(x0: number, x1: number, count?: number, locale?: string): MonthTick[];
 /** A share as "53%"; under one per cent, "<1%". */
 export declare function formatShare(share: number): string;
+/** The plot widths, in CSS px, at which a ColumnChart re-plans its period labels. */
+export declare const COLUMN_AXIS_WIDTHS: readonly number[];
+/**
+ * How wide a label is in the monospace label face, in CSS px, without a
+ * browser: 0.61em a character (every common monospace is 0.6), a full em
+ * for a wide (CJK) character or a pictograph. Generous on purpose: a label
+ * thought wider than it is costs a hidden neighbour; one thought narrower
+ * prints over it.
+ */
+export declare function labelWidth(text: string): number;
+/**
+ * Every how-many-th period label a row of columns can carry at a plot width:
+ * 1 when each fits its column, else the least step at which the labels shown
+ * (the first, then every step-th) neither touch nor leave the plot. A label
+ * wider than its column is centred on it and runs over its hidden
+ * neighbours; the first is held at the left edge and the last at the right.
+ * When not even one label fits beside another, only the first is shown.
+ */
+export declare function columnLabelStep(labels: readonly string[], plotWidth: number): number;
+/**
+ * For each period label of a ColumnChart, the widths of
+ * `COLUMN_AXIS_WIDTHS` at which it steps back so its neighbours fit — the
+ * step is planned for the narrowest plot of each band, so it holds across
+ * the band. A label is thinned out, never cut: the CSS hides it with a
+ * container query on the axis. Empty for a label shown at every width.
+ */
+export declare function columnLabelPlan(labels: readonly string[]): number[][];
 //# sourceMappingURL=index.d.ts.map

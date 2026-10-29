@@ -1,4 +1,4 @@
-import { formatNumber, formatX, niceStep, truncate, type XValue } from "../index.js";
+import { columnLabelPlan, formatNumber, formatX, niceStep, type XValue } from "../index.js";
 import { ChartFigure } from "./Figure.js";
 
 export interface ColumnPoint {
@@ -30,9 +30,6 @@ export interface ColumnChartProps {
   /** Stack positive and negative values separately around zero. Missing data remains missing. */
   stacked?: boolean;
 }
-
-/** Period labels longer than this get an ellipsis and keep the full text in `title`. */
-const PERIOD_MAX = 8;
 
 /**
  * A value axis that always holds zero, on round steps, below zero as well as
@@ -96,6 +93,10 @@ export function ColumnChart({
   const yTicks = scale.ticks.map((v) => ({ pos: pct(v), label: formatNumber(v, locale) }));
   const gutter = Math.max(...yTicks.map((t) => t.label.length)) + 1;
   const unitText = unit ? ` ${unit}` : "";
+  const labels = periods.map((x) => formatX(x, locale));
+  // Too many periods for the plot's width: every n-th label steps back (by a
+  // container query on the axis) so the rest are printed whole. Nothing is cut.
+  const hidden = columnLabelPlan(labels);
   const table = {
     head: [periodLabel, ...series.map((s) => (unit ? `${s.label} (${unit})` : s.label))],
     rows: periods.map((x) => [
@@ -165,9 +166,14 @@ export function ColumnChart({
         </div>
       </div>
       <div className="ck-col-axis" aria-hidden="true">
-        {periods.map((x) => (
-          <span key={String(x)} className="ck-col-xtick" title={formatX(x, locale)}>
-            {truncate(formatX(x, locale), PERIOD_MAX)}
+        {periods.map((x, i) => (
+          <span
+            key={String(x)}
+            className="ck-col-xtick"
+            title={labels[i]}
+            data-hide={hidden[i].length ? hidden[i].join(" ") : undefined}
+          >
+            <span className="ck-col-xlabel">{labels[i]}</span>
           </span>
         ))}
       </div>

@@ -5,7 +5,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   AUTO_MARKER_LIMIT,
+  COLUMN_AXIS_WIDTHS,
   areaPath,
+  columnLabelPlan,
+  columnLabelStep,
+  labelWidth,
   formatShare,
   hitColumns,
   formatX,
@@ -186,7 +190,7 @@ test("localized UTC dates and ticks keep their period and ignore the server time
   assert.equal(formatX("2025-Q2", "de-DE"), "Q2 2025");
   const from = Date.UTC(2025, 1, 1),
     to = Date.UTC(2025, 3, 1);
-  assert.ok(timeTicks(from, to, 5, "de-DE").some((t) => t.label.includes("März")));
+  assert.ok(timeTicks(from, to, 5, "de-DE").some((t) => t.label.includes("Mär")));
   assert.ok(
     monthTicks(from, to, 6, "de-DE").some(
       (t) =>
@@ -197,4 +201,86 @@ test("localized UTC dates and ticks keep their period and ignore the server time
     ),
   );
   assert.ok(numberTicks(1000, 3000, 5, "de-DE").some((t) => t.label === "2.000"));
+});
+
+test("time ticks label any span: days, weeks, months and years, never an empty axis", () => {
+  const u = Date.UTC;
+  // The defect: 30 daily values (1–27 Oct) got no label at all.
+  const month = timeTicks(u(2026, 9, 1), u(2026, 9, 27), 5);
+  assert.deepEqual(
+    month.map((t) => t.label),
+    ["5 Oct 2026", "12 Oct", "19 Oct", "26 Oct"],
+    "a month of days ticks on Mondays, the first naming the year",
+  );
+  assert.ok(month.every((t) => t.pos >= 0 && t.pos <= 100));
+  const week = timeTicks(u(2026, 9, 1), u(2026, 9, 7), 5);
+  assert.ok(week.length >= 3 && week.length <= 5, `${week.length} day ticks over a week`);
+  assert.match(week[0].label, /^\d{1,2} Oct 2026$/);
+  assert.deepEqual(
+    timeTicks(u(2026, 9, 1), u(2026, 9, 2), 5).map((t) => [t.pos, t.label]),
+    [
+      [0, "1 Oct 2026"],
+      [100, "2 Oct"],
+    ],
+    "two days: both named",
+  );
+  // A span no step ticks inside is named at its ends, not left bare.
+  const hours = timeTicks(u(2026, 9, 1, 6), u(2026, 9, 1, 18), 5);
+  assert.ok(hours.length >= 1 && hours.every((t) => t.label));
+  const turn = timeTicks(u(2025, 11, 20), u(2026, 0, 20), 5).map((t) => t.label);
+  assert.deepEqual(turn, ["22 Dec 2025", "5 Jan 2026", "19 Jan"], "a new year names itself");
+  const year = timeTicks(u(2025, 9, 27), u(2026, 9, 27), 5).map((t) => t.label);
+  assert.deepEqual(year, ["Jan 2026", "Apr", "Jul", "Oct"], "a year of days ticks on quarters");
+  const decades = timeTicks(u(1985, 0, 1), u(2026, 0, 1), 5).map((t) => t.label);
+  assert.deepEqual(decades, ["1990", "2000", "2010", "2020"]);
+  assert.ok(
+    timeTicks(u(2026, 9, 1), u(2026, 9, 27), 5, "de-CH").some((t) => t.label.includes("Okt")),
+    "day ticks speak the locale",
+  );
+  for (let days = 1; days <= 4000; days = Math.ceil(days * 1.37)) {
+    const ticks = timeTicks(u(2026, 0, 3), u(2026, 0, 3) + days * 86_400_000, 5);
+    assert.ok(ticks.length >= 1 && ticks.length <= 5, `${days} days: ${ticks.length} ticks`);
+  }
+  assert.equal(numberTicks(7, 7, 5).length, 1, "a single number is still named");
+});
+
+test("column labels thin out before anything is cut, and never past what fits", () => {
+  const years = Array.from({ length: 12 }, (_, i) => String(2015 + i));
+  assert.ok(labelWidth("2025") > 0 && labelWidth("2025") < labelWidth("Mar 2025"));
+  assert.ok(labelWidth("一月") > labelWidth("ab"), "a wide character is wider");
+  assert.equal(columnLabelStep(years, 900), 1, "room for every year");
+  const narrow = columnLabelStep(years, 300);
+  assert.ok(narrow >= 2 && narrow <= 4, `every ${narrow}th year at 300px`);
+  assert.ok(columnLabelStep(years, 160) > narrow, "narrower thins further");
+  assert.equal(columnLabelStep(["2025"], 40), 1);
+  assert.equal(columnLabelStep(["A long first period", "B"], 60), 2, "only the first, last of all");
+  // The labels a step shows never come closer than the pad, at any width.
+  for (const labels of [
+    years,
+    ["Jan 2025", "Feb 2025", "Mar 2025", "Apr 2025", "May 2025", "Jun 2025"],
+    Array.from({ length: 31 }, (_, i) => `${i + 1} Oct 2026`),
+  ]) {
+    for (let width = 100; width <= 1400; width += 20) {
+      const step = columnLabelStep(labels, width);
+      assert.ok(step >= 1 && step <= labels.length);
+      const pitch = (width + 8) / labels.length;
+      const shown = labels.map((_, i) => i).filter((i) => i % step === 0);
+      if (shown.length < 2) continue;
+      // Neighbouring shown labels are at least their own half-widths apart.
+      for (let k = 1; k < shown.length; k++) {
+        const a = shown[k - 1],
+          b = shown[k];
+        assert.ok(
+          (b - a) * pitch >= (labelWidth(labels[a]) + labelWidth(labels[b])) / 2,
+          `${labels[a]} and ${labels[b]} at ${width}px`,
+        );
+      }
+    }
+  }
+  const plan = columnLabelPlan(years);
+  assert.equal(plan.length, 12);
+  assert.deepEqual(plan[0], [], "the first label is shown at every width");
+  assert.ok(plan[1].includes(320) && !plan[1].includes(1200), "hidden on a phone, shown wide");
+  assert.ok(plan.flat().every((w) => COLUMN_AXIS_WIDTHS.includes(w)));
+  assert.deepEqual(columnLabelPlan(["2024", "2025"]), [[], []], "two years always fit");
 });

@@ -176,6 +176,77 @@ try {
             `${name}: every stacked segment exposes its own value on hover`,
           );
         }
+        // The three gaps found when apps adopted 0.6.0, measured where they showed.
+        const g = await page.evaluate(() => {
+          const shown = (el) =>
+            getComputedStyle(el).display !== "none" && el.getBoundingClientRect().width > 0;
+          const figure = (text) =>
+            [...document.querySelectorAll(".ck-chart")].find((f) =>
+              f.querySelector(".ck-chart-caption")?.textContent.includes(text),
+            );
+          const columns = (text) => {
+            const labels = [...figure(text).querySelectorAll(".ck-col-xlabel")];
+            const visible = labels.filter(shown);
+            return {
+              total: labels.length,
+              visible: visible.length,
+              whole: visible.every(
+                (l) =>
+                  l.scrollWidth <= l.clientWidth + 0.5 && l.textContent === l.parentElement.title,
+              ),
+              first: shown(labels[0]),
+            };
+          };
+          const probe = (color) => {
+            const el = document.createElement("span");
+            el.style.color = color;
+            document.body.append(el);
+            const c = getComputedStyle(el).color;
+            el.remove();
+            return c;
+          };
+          const risk = document.querySelector('.ck-meter-track[data-tone="negative"]');
+          const spark = [...document.querySelectorAll(".ck-spark")].at(-1);
+          return {
+            dayTicks: [...figure("1 to 27 October").querySelectorAll(".ck-line-xtick")].filter(
+              shown,
+            ).length,
+            years: columns("by year, 2015 to 2026"),
+            months: columns("by month, 2025"),
+            meterFill: getComputedStyle(risk.querySelector(".ck-meter-fill")).backgroundColor,
+            meterValue: risk.parentElement.querySelector(".ck-meter-value") === null,
+            down: probe("var(--ck-down)"),
+            up: probe("var(--ck-up)"),
+            solo: spark.querySelectorAll(".ck-spark-solo").length,
+            dot: getComputedStyle(spark.querySelector('.ck-spark-dot[data-tone="positive"]'))
+              .stroke,
+            breaks: (spark.querySelector(".ck-spark-line").getAttribute("d").match(/M/g) ?? [])
+              .length,
+          };
+        });
+        check(g.dayTicks >= 1, `${name}: a month of days carries date labels (${g.dayTicks})`);
+        for (const [what, c] of [
+          ["years", g.years],
+          ["months", g.months],
+        ]) {
+          check(
+            c.whole && c.first && c.visible >= 2,
+            `${name}: ${what} are printed whole, ${c.visible} of ${c.total} shown (${JSON.stringify(c)})`,
+          );
+          // "Sept. 2025" is wider than "Sep 2025": de-CH months may thin even wide.
+          if (width >= 1280 && (what === "years" || !locale))
+            check(c.visible === c.total, `${name}: wide, every one of the ${what} is shown`);
+        }
+        if (width <= 390)
+          check(g.years.visible < g.years.total, `${name}: on a phone the years thin out`);
+        check(
+          g.meterFill === g.down && g.meterValue,
+          `${name}: a toned meter fills in its token, value left to the caller (${g.meterFill})`,
+        );
+        check(
+          g.solo === 1 && g.breaks === 3 && g.dot === g.up,
+          `${name}: sparkline breaks at a gap and colours its days (${JSON.stringify(g)})`,
+        );
         check(m.overflow <= 0, `${name}: no horizontal scroll (${m.overflow}px over)`);
         check(m.smallest >= 12, `${name}: no label under 12px (${m.smallest}px)`);
         check(

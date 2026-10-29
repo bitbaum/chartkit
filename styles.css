@@ -433,16 +433,124 @@
 .ck-col-axis {
   margin-top: 0.5rem;
   color: var(--ck-ink-muted);
+  /* The axis is the plot's width; its labels ask it how wide it is. */
+  container: ck-col-axis / inline-size;
 }
+/* A period's cell. Its label is printed whole, centred on the column, and
+   runs over its neighbours when they have stepped back; the first is held at
+   the left edge and the last at the right (`safe` keeps an overflowing
+   label on the side it starts from, and row-reverse makes that the right). */
 .ck-col-xtick {
-  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
   font-family: var(--ck-mono);
   font-size: var(--ck-label);
   line-height: 1.25rem;
-  text-align: center;
   white-space: nowrap;
-  text-overflow: ellipsis;
   font-variant-numeric: tabular-nums;
+}
+.ck-col-xtick:first-child {
+  justify-content: safe center;
+}
+.ck-col-xtick:last-child {
+  flex-direction: row-reverse;
+  justify-content: safe center;
+}
+.ck-col-xlabel {
+  flex: none;
+  /* Only a label wider than the whole plot is ever shortened. */
+  max-width: 100cqw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Too many periods for the width: every n-th label steps back so the rest
+   are whole — thinned, never cut. The server plans which, per band of plot
+   width (COLUMN_AXIS_WIDTHS in src/index.ts; keep the two in step). */
+@container ck-col-axis (width < 160px) {
+  .ck-col-xtick[data-hide~="0"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (160px <= width < 200px) {
+  .ck-col-xtick[data-hide~="160"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (200px <= width < 240px) {
+  .ck-col-xtick[data-hide~="200"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (240px <= width < 280px) {
+  .ck-col-xtick[data-hide~="240"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (280px <= width < 320px) {
+  .ck-col-xtick[data-hide~="280"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (320px <= width < 360px) {
+  .ck-col-xtick[data-hide~="320"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (360px <= width < 400px) {
+  .ck-col-xtick[data-hide~="360"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (400px <= width < 480px) {
+  .ck-col-xtick[data-hide~="400"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (480px <= width < 560px) {
+  .ck-col-xtick[data-hide~="480"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (560px <= width < 640px) {
+  .ck-col-xtick[data-hide~="560"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (640px <= width < 720px) {
+  .ck-col-xtick[data-hide~="640"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (720px <= width < 800px) {
+  .ck-col-xtick[data-hide~="720"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (800px <= width < 880px) {
+  .ck-col-xtick[data-hide~="800"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (880px <= width < 960px) {
+  .ck-col-xtick[data-hide~="880"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (960px <= width < 1080px) {
+  .ck-col-xtick[data-hide~="960"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (1080px <= width < 1200px) {
+  .ck-col-xtick[data-hide~="1080"] > .ck-col-xlabel {
+    display: none;
+  }
+}
+@container ck-col-axis (width >= 1200px) {
+  .ck-col-xtick[data-hide~="1200"] > .ck-col-xlabel {
+    display: none;
+  }
 }
 
 /* ---- BarChart ---------------------------------------------------------- */
@@ -568,11 +676,24 @@
   stroke-linejoin: round;
   stroke-linecap: round;
 }
-.ck-spark circle {
-  fill: none;
-  stroke: var(--ck-ink);
+/* The last value, a value standing alone between two gaps, and a point with
+   a tone: each a round dot (a stroke of no length with a round cap). The end
+   is the largest, so it still reads as the end. */
+.ck-spark .ck-spark-end {
   stroke-width: 5px;
-  stroke-linecap: round;
+}
+.ck-spark .ck-spark-solo,
+.ck-spark .ck-spark-dot {
+  stroke-width: 4px;
+}
+.ck-spark [data-tone="positive"] {
+  stroke: var(--ck-up);
+}
+.ck-spark [data-tone="warning"] {
+  stroke: var(--ck-warning);
+}
+.ck-spark [data-tone="negative"] {
+  stroke: var(--ck-down);
 }
 
 /* ---- Meter ------------------------------------------------------------- */
@@ -598,6 +719,18 @@
 .ck-meter-fill {
   width: var(--ck-meter, 0%);
   background: var(--ck-accent);
+}
+.ck-meter-track[data-tone="neutral"] .ck-meter-fill {
+  background: var(--ck-ink);
+}
+.ck-meter-track[data-tone="positive"] .ck-meter-fill {
+  background: var(--ck-up);
+}
+.ck-meter-track[data-tone="warning"] .ck-meter-fill {
+  background: var(--ck-warning);
+}
+.ck-meter-track[data-tone="negative"] .ck-meter-fill {
+  background: var(--ck-down);
 }
 
 /* ---- StatTiles --------------------------------------------------------- */

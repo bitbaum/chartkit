@@ -3,3 +3,5 @@
 # pnpm install there, where pnpm 11 refuses an unapproved build script.
 allowBuilds:
   esbuild: true
+minimumReleaseAgeExclude:
+  - "@bitbaum/design-tokens@1.3.0"

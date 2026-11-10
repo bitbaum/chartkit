@@ -94,6 +94,29 @@ export function valueScale(values, from = "auto", tickCount = 3) {
         ticks.push(Number(v.toPrecision(12)));
     return { min, max, ticks };
 }
+/**
+ * A value axis the product fixes: a 1–5 rating reads on 1–5 whatever the
+ * data, not on the data's own 2.5–4.5. `step` sets the tick spacing (1 gives
+ * integer ticks); left out, a round step for three or so ticks. A value or
+ * band outside the domain widens it on that side rather than being drawn off
+ * the plot.
+ */
+export function fixedScale(values, domain) {
+    if (!Number.isFinite(domain.min) || !Number.isFinite(domain.max) || domain.min >= domain.max)
+        throw new RangeError("yDomain needs finite bounds with min below max");
+    if (domain.step !== undefined && !(domain.step > 0))
+        throw new RangeError("yDomain step must be positive");
+    const finite = values.filter((v) => Number.isFinite(v));
+    const step = domain.step ?? niceStep(domain.max - domain.min, 3);
+    const lo = finite.length ? Math.min(...finite) : domain.min;
+    const hi = finite.length ? Math.max(...finite) : domain.max;
+    const min = lo < domain.min ? domain.min - Math.ceil((domain.min - lo) / step) * step : domain.min;
+    const max = hi > domain.max ? domain.max + Math.ceil((hi - domain.max) / step) * step : domain.max;
+    const ticks = [];
+    for (let v = min; v <= max + step / 2; v += step)
+        ticks.push(Number(v.toPrecision(12)));
+    return { min, max, ticks };
+}
 /** Per cent from the top for a value on a scale. */
 export function yPercent(value, scale) {
     return scale.max === scale.min ? 50 : ((scale.max - value) / (scale.max - scale.min)) * 100;

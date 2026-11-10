@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { areaPath, formatNumber, hitColumns, formatX, isDate, linePath, numberTicks, resolveMarkers, timeTicks, valueScale, xExtent, xPercent, xPosition, yPercent, } from "../index.js";
+import { areaPath, formatNumber, hitColumns, formatX, isDate, fixedScale, linePath, numberTicks, resolveMarkers, timeTicks, valueScale, xExtent, xPercent, xPosition, yPercent, } from "../index.js";
 import { ChartFigure } from "./Figure.js";
 /** Points with more than this many on one series draw smaller dots. */
 const DENSE = 40;
@@ -11,15 +11,16 @@ const DENSE = 40;
  * plot. Every point is an anchor to the page its number came from, with its
  * value, period and note on hover and on keyboard focus.
  */
-export function LineChart({ series, unit, caption, yFrom, height = 208, markers = "all", area = false, locale, periodLabel = "Period", preliminaryLabel = "preliminary", referenceBands = [], }) {
+export function LineChart({ series, unit, caption, yFrom, yDomain, height = 208, markers = "all", area = false, locale, periodLabel = "Period", preliminaryLabel = "preliminary", referenceBands = [], }) {
     for (const band of referenceBands) {
         if (!Number.isFinite(band.from) || !Number.isFinite(band.to) || band.from > band.to)
             throw new RangeError("Reference bands need finite bounds in ascending order");
     }
-    const scale = valueScale([
+    const values = [
         ...series.flatMap((s) => s.points.map((p) => p.y)),
         ...referenceBands.flatMap((b) => [b.from, b.to]),
-    ], yFrom ?? "auto");
+    ];
+    const scale = yDomain ? fixedScale(values, yDomain) : valueScale(values, yFrom ?? "auto");
     const extent = xExtent(series);
     const dated = series.some((s) => s.points.some((p) => isDate(p.x)));
     const xTicks = dated

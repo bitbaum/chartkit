@@ -22,6 +22,7 @@ import {
   timeTicks,
   truncate,
   valueScale,
+  fixedScale,
   xExtent,
   xPercent,
   xPosition,
@@ -283,4 +284,21 @@ test("column labels thin out before anything is cut, and never past what fits", 
   assert.ok(plan[1].includes(320) && !plan[1].includes(1200), "hidden on a phone, shown wide");
   assert.ok(plan.flat().every((w) => COLUMN_AXIS_WIDTHS.includes(w)));
   assert.deepEqual(columnLabelPlan(["2024", "2025"]), [[], []], "two years always fit");
+});
+
+test("fixedScale holds a 1–5 rating on 1–5 with integer ticks", () => {
+  assert.deepEqual(fixedScale([3, 4, 3.5], { min: 1, max: 5, step: 1 }), {
+    min: 1,
+    max: 5,
+    ticks: [1, 2, 3, 4, 5],
+  });
+  assert.deepEqual(fixedScale([], { min: 1, max: 5, step: 1 }).ticks, [1, 2, 3, 4, 5]);
+  // Data outside widens the domain on that side, by whole steps.
+  assert.deepEqual(fixedScale([0.2, 6], { min: 1, max: 5, step: 1 }), {
+    min: 0,
+    max: 6,
+    ticks: [0, 1, 2, 3, 4, 5, 6],
+  });
+  assert.throws(() => fixedScale([1], { min: 5, max: 1 }), /min below max/);
+  assert.throws(() => fixedScale([1], { min: 1, max: 5, step: 0 }), /positive/);
 });

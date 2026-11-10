@@ -704,3 +704,24 @@ test("Sparkline: null breaks the line, a lone value is a dot, tones colour their
   assert.equal((before.match(/<path/g) ?? []).length, 2, "no nulls, no tones: a line and its end");
   assert.match(before, /class="ck-spark-end" d="M100\.00 /);
 });
+
+test("LineChart yDomain fixes the value axis with integer ticks", () => {
+  const html = renderToStaticMarkup(
+    h(LineChart, {
+      series: [
+        {
+          id: "mood",
+          label: "Mood",
+          points: [
+            { x: "2026-10-01", y: 3 },
+            { x: "2026-10-02", y: 4 },
+          ],
+        },
+      ],
+      caption: "Mood, 1–5",
+      yDomain: { min: 1, max: 5, step: 1 },
+    }),
+  );
+  const ticks = [...html.matchAll(/class="ck-line-tick">([^<]*)</g)].map((m) => m[1]);
+  assert.deepEqual(ticks, ["1", "2", "3", "4", "5"]);
+});

@@ -173,6 +173,10 @@ data, it does not guess product copy.
 
 ## Reference intervals, stacking and proportions
 
+`LineChart` accepts `yDomain={{ min: 1, max: 5, step: 1 }}` for a fixed value
+axis (a 1–5 rating with integer ticks); it wins over `yFrom`, and a value
+outside widens it by whole steps rather than leaving the plot.
+
 `LineChart` accepts `referenceBands={[{ from: 10, to: 20, label: "Expected interval" }]}`.
 The app owns the interval, label and unit; the chart extends its scale to include
 the bounds and exposes the exact interval as text. Invalid/reversed bounds fail

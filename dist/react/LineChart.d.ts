@@ -9,6 +9,15 @@ export interface LineChartProps {
      * floor; left out, zero when the data sits near it and the floor otherwise.
      */
     yFrom?: "zero" | "data";
+    /**
+     * A fixed value axis, e.g. `{ min: 1, max: 5, step: 1 }` for a 1–5 rating
+     * with integer ticks. Wins over `yFrom`. Data outside widens it.
+     */
+    yDomain?: {
+        min: number;
+        max: number;
+        step?: number;
+    };
     /** Plot height in CSS px. The width is the container's. */
     height?: number;
     /**
@@ -42,5 +51,5 @@ export interface LineChartProps {
  * plot. Every point is an anchor to the page its number came from, with its
  * value, period and note on hover and on keyboard focus.
  */
-export declare function LineChart({ series, unit, caption, yFrom, height, markers, area, locale, periodLabel, preliminaryLabel, referenceBands, }: LineChartProps): import("react").JSX.Element;
+export declare function LineChart({ series, unit, caption, yFrom, yDomain, height, markers, area, locale, periodLabel, preliminaryLabel, referenceBands, }: LineChartProps): import("react").JSX.Element;
 //# sourceMappingURL=LineChart.d.ts.map

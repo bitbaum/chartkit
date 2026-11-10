@@ -4,6 +4,7 @@ import {
   hitColumns,
   formatX,
   isDate,
+  fixedScale,
   linePath,
   numberTicks,
   resolveMarkers,
@@ -30,6 +31,11 @@ export interface LineChartProps {
    * floor; left out, zero when the data sits near it and the floor otherwise.
    */
   yFrom?: "zero" | "data";
+  /**
+   * A fixed value axis, e.g. `{ min: 1, max: 5, step: 1 }` for a 1–5 rating
+   * with integer ticks. Wins over `yFrom`. Data outside widens it.
+   */
+  yDomain?: { min: number; max: number; step?: number };
   /** Plot height in CSS px. The width is the container's. */
   height?: number;
   /**
@@ -68,6 +74,7 @@ export function LineChart({
   unit,
   caption,
   yFrom,
+  yDomain,
   height = 208,
   markers = "all",
   area = false,
@@ -80,13 +87,11 @@ export function LineChart({
     if (!Number.isFinite(band.from) || !Number.isFinite(band.to) || band.from > band.to)
       throw new RangeError("Reference bands need finite bounds in ascending order");
   }
-  const scale = valueScale(
-    [
-      ...series.flatMap((s) => s.points.map((p) => p.y)),
-      ...referenceBands.flatMap((b) => [b.from, b.to]),
-    ],
-    yFrom ?? "auto",
-  );
+  const values = [
+    ...series.flatMap((s) => s.points.map((p) => p.y)),
+    ...referenceBands.flatMap((b) => [b.from, b.to]),
+  ];
+  const scale = yDomain ? fixedScale(values, yDomain) : valueScale(values, yFrom ?? "auto");
   const extent = xExtent(series);
   const dated = series.some((s) => s.points.some((p) => isDate(p.x)));
   const xTicks: Tick[] = dated

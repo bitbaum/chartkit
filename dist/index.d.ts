@@ -60,6 +60,18 @@ export interface Scale {
  * the data sits near it, so a small value is not drawn as a large one.
  */
 export declare function valueScale(values: readonly number[], from?: "zero" | "data" | "auto", tickCount?: number): Scale;
+/**
+ * A value axis the product fixes: a 1–5 rating reads on 1–5 whatever the
+ * data, not on the data's own 2.5–4.5. `step` sets the tick spacing (1 gives
+ * integer ticks); left out, a round step for three or so ticks. A value or
+ * band outside the domain widens it on that side rather than being drawn off
+ * the plot.
+ */
+export declare function fixedScale(values: readonly number[], domain: {
+    min: number;
+    max: number;
+    step?: number;
+}): Scale;
 /** Per cent from the top for a value on a scale. */
 export declare function yPercent(value: number, scale: Scale): number;
 /** The x extent of several series, as positions. */

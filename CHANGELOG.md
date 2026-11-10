@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0
+
+Additions only; every existing prop and default behaves as before.
+
+- **`LineChart` `yDomain`.** `{ min, max, step? }` fixes the value axis: a
+  1–5 rating reads on 1–5 with ticks 1, 2, 3, 4, 5 whatever the data, not on
+  the data's own rounded range. Wins over `yFrom`; a value or band outside
+  widens the axis by whole steps. Core: `fixedScale`.
+
 ## 0.7.0
 
 Additions only; every existing prop and default behaves as before.

@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       '@bitbaum/design-tokens':
-        specifier: ^1.5.2
-        version: 1.5.2
+        specifier: ^1.7.1
+        version: 1.7.1
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.14.0)
@@ -53,8 +53,8 @@ importers:
 
 packages:
 
-  '@bitbaum/design-tokens@1.5.2':
-    resolution: {integrity: sha512-ScF091XRs5ph109PkRgI3t5w3eersltlJUGea64MPItqXaT5asXM2x3Gj4t6THuFGojZ2pvMLAtuOc3DTmCoTg==}
+  '@bitbaum/design-tokens@1.7.1':
+    resolution: {integrity: sha512-ejJOZyaN043LTTXkokpCR8kwU6wBt4SNxepUY0cnFX/1ilZRdZwkxnB+vlSlz75DtrMc1pF3KjyOt8C3o5rIqA==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -683,7 +683,7 @@ packages:
 
 snapshots:
 
-  '@bitbaum/design-tokens@1.5.2': {}
+  '@bitbaum/design-tokens@1.7.1': {}
 
   '@cacheable/memory@2.2.0':
     dependencies:
